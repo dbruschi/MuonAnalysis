@@ -99,15 +99,31 @@ void
 MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-
-   unsigned int i=0;
+   unsigned int i=0, nmuon=0;
+   float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all;
+   bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_tightId, muon_isPF, muon_pfIsoLoose, muon_pfIsoMedium, muon_pfIsoTight;
+   int muon_charge;
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
       std::cout << "Muon n." << i << " Muon pt" << muon.pt() << "  isLooseMuon:" << muon.isLooseMuon() << " isMediumMuon:" << muon.isMediumMuon();
       std::cout << " isPFIsoLoose:" << muon.PFIsoLoose << " isPFIsoMedium:" << muon.PFIsoMedium << " isPFIsoTight:" << muon.PFIsoTight << "\n";
       i++;
+      muon_pt=muon.pt();
+      muon_eta=muon.eta();
+      muon_phi=muon.phi();
+      muon_mass=muon.mass();
+      muon_isTracker=muon.isTrackerMuon();
+      muon_isGlobal=muon.isGlobalMuon();
+      muon_isStandalone=muon.isStandAloneMuon();
+      muon_isPF=muon.isPFMuon();
+      muon_looseId=muon.isLooseMuon();
+      muon_mediumId=muon.isMediumMuon();
+      muon_pfIsoLoose=muon.PFIsoLoose;
+      muon_pfIsoMedium=muon.PFIsoMedium;
+      muon_pfIsoTight=muon.PFIsoTight;
    }
+   nmuon=i+1;
    
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
