@@ -33,6 +33,7 @@
 #include "DataFormats/TrackReco/interface/TrackFwd.h"
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
+#include "DataFormats/VertexReco/interface/Vertex.h"
 //
 // class declaration
 //
@@ -58,6 +59,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
       // ----------member data ---------------------------
       edm::EDGetTokenT<std::vector<pat::Muon> > muonToken_;
+      edm::EDGetTokenT<std::vector<reco::Vertex> > vertexToken_;
 };
 
 //
@@ -77,7 +79,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 
 {
    //now do what ever initialization is needed
-
+    vertexToken_=consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertices"));
 }
 
 
@@ -101,14 +103,13 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    using namespace edm;
    unsigned int i=0, nmuon=0;
    float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all;
-   bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_tightId, muon_isPF, muon_pfIsoLoose, muon_pfIsoMedium, muon_pfIsoTight;
+   bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
+   unsigned char muon_highPtId, muon_miniIsoId, muon_multiIsoId, muon_mvaId, muon_mvaLowPtId, muon_pfIsoId, muon_tkIsoId;
+   reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
-      std::cout << "Muon n." << i << " Muon pt" << muon.pt() << "  isLooseMuon:" << muon.isLooseMuon() << " isMediumMuon:" << muon.isMediumMuon();
-      std::cout << " isPFIsoLoose:" << muon.PFIsoLoose << " isPFIsoMedium:" << muon.PFIsoMedium << " isPFIsoTight:" << muon.PFIsoTight << "\n";
-      i++;
       muon_pt=muon.pt();
       muon_eta=muon.eta();
       muon_phi=muon.phi();
@@ -119,12 +120,48 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       muon_isPF=muon.isPFMuon();
       muon_looseId=muon.isLooseMuon();
       muon_mediumId=muon.isMediumMuon();
-      muon_pfIsoLoose=muon.PFIsoLoose;
-      muon_pfIsoMedium=muon.PFIsoMedium;
-      muon_pfIsoTight=muon.PFIsoTight;
-   }
+      muon_mediumPromptId=muon.passed(muon.CutBasedIdMediumPrompt);
+      muon_tightId=muon.isTightMuon(primaryvertex);
+      muon_softId=muon.isSoftMuon(primaryvertex);
+      if (muon.isHighPtMuon(primaryvertex)) muon_highPtId=2;
+      //if (muon.isTrackerHighPtMuon(primaryvertex)) muon_highPtId=1;
+      if (muon.passed(reco::Muon::MiniIsoLoose)) muon_miniIsoId=1;
+      if (muon.passed(reco::Muon::MiniIsoMedium)) muon_miniIsoId=2;
+      if (muon.passed(reco::Muon::MiniIsoTight)) muon_miniIsoId=3;
+      if (muon.passed(reco::Muon::MiniIsoVeryTight)) muon_miniIsoId=4;
+      if (muon.passed(reco::Muon::MultiIsoLoose)) muon_multiIsoId=1;
+      if (muon.passed(reco::Muon::MultiIsoMedium)) muon_multiIsoId=2;
+      if (muon.passed(reco::Muon::MvaLoose)) muon_mvaId=1;
+      if (muon.passed(reco::Muon::MvaMedium)) muon_mvaId=2;
+      if (muon.passed(reco::Muon::MvaTight)) muon_mvaId=3;
+      if (muon.passed(reco::Muon::MvaVTight)) muon_mvaId=4;
+      if (muon.passed(reco::Muon::MvaVVTight)) muon_mvaId=5;
+      if (muon.passed(reco::Muon::LowPtMvaLoose)) muon_mvaLowPtId=1;
+      if (muon.passed(reco::Muon::LowPtMvaMedium)) muon_mvaLowPtId=2;
+      if (muon.passed(reco::Muon::PFIsoVeryLoose)) muon_pfIsoId=1;
+      if (muon.passed(reco::Muon::PFIsoLoose)) muon_pfIsoId=2;
+      if (muon.passed(reco::Muon::PFIsoMedium)) muon_pfIsoId=3;
+      if (muon.passed(reco::Muon::PFIsoTight)) muon_pfIsoId=4;
+      if (muon.passed(reco::Muon::PFIsoVeryTight)) muon_pfIsoId=5;
+      if (muon.passed(reco::Muon::PFIsoVeryVeryTight)) muon_pfIsoId=6;
+      if (muon.passed(reco::Muon::SoftMvaId)) muon_softMvaId=1;
+      if (muon.passed(reco::Muon::TkIsoLoose)) muon_tkIsoId=1;
+      if (muon.passed(reco::Muon::TkIsoTight)) muon_tkIsoId=2;
+      //muon_pfIsoLoose=muon.passed(muon.PFIsoLoose);
+      //muon_pfIsoMedium=muon.passed(muon.PFIsoMedium);
+      //muon_pfIsoTight=muon.passed(muon.PFIsoTight);
+      std::cout << "Muon n." << i << " Muon pt" << muon_pt << " Muon eta" << muon_eta << " Muon phi" << muon_phi << " Muon mass" << muon_mass;
+      std::cout << " isLooseMuon:" << muon_looseId << " isMediumMuon:" << muon_mediumId << " isMediumPromptMuon: "<< muon_mediumPromptId ;
+      std::cout << " isTightMuon:" << muon_tightId << "isSoftMuon:" << muon_softId << " muon_highPtId:" << (int)muon_highPtId << " muon_miniIsoId:";
+      std::cout << (int)muon_miniIsoId << " muon_multiIsoId:" << (int)muon_multiIsoId << " muon_mvaId:" << (int)muon_mvaId << " muon_mvaLowPtId:" << (int)muon_mvaLowPtId;
+      std::cout << " muon_pfIsoId:" << (int)muon_pfIsoId << " muon_softMvaId:" << muon_softMvaId << "muon_tkIsoId:" << (int)muon_tkIsoId;
+      std::cout << " isTrackerMuon:" << muon_isTracker << " isGlobalMuon:" << muon_isGlobal << " isStandaloneMuon" << muon_isStandalone << " isPFMuon:"<<  muon_isPF<<"\n";
+      i++;
+}
    nmuon=i+1;
-   
+   std::cout<<nmuon<<"\n";
+   std::cout<<"First Primary Vertex x:"<<primaryvertex.x()<<" y:"<<primaryvertex.y()<<" z:"<<primaryvertex.z()<<"\n";
+
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
    iSetup.get<SetupRecord>().get(pSetup);
