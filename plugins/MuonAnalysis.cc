@@ -100,13 +100,15 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
 
+   unsigned int i=0;
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
-      std::cout << muon.pt() << " ";
+      std::cout << "Muon n." << i << " Muon pt" << muon.pt() << "  isLooseMuon:" << muon.isLooseMuon() << " isMediumMuon:" << muon.isMediumMuon();
+      std::cout << " isPFIsoLoose:" << muon.PFIsoLoose << " isPFIsoMedium:" << muon.PFIsoMedium << " isPFIsoTight:" << muon.PFIsoTight << "\n";
+      i++;
    }
-   std::cout<<"\n";
-
+   
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
    iSetup.get<SetupRecord>().get(pSetup);
