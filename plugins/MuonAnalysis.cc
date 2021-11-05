@@ -105,7 +105,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all;
    bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
-   unsigned char muon_highPtId, muon_miniIsoId, muon_multiIsoId, muon_mvaId, muon_mvaLowPtId, muon_pfIsoId, muon_tkIsoId;
+   unsigned char muon_highPtId=0, muon_miniIsoId=0, muon_multiIsoId=0, muon_mvaId=0, muon_mvaLowPtId=0, muon_pfIsoId=0, muon_tkIsoId=0;
    reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
