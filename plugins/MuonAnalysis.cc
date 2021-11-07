@@ -102,7 +102,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
    unsigned int i=0, nmuon=0;
-   float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all;
+   float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all, muon_pfRelIso04_chgPV, muon_pfRelIso04_chgPU, muon_pfRelIso04_nhad, muon_pfRelIso04_pho, muon_pfRelIso03_all, muon_pfRelIso03_chgPV, muon_pfRelIso03_chgPU, muon_pfRelIso03_nhad, muon_pfRelIso03_pho, muon_tkRelIso, muon_dxy, muon_dz;
    bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
    unsigned char muon_highPtId=0, muon_miniIsoId=0, muon_multiIsoId=0, muon_mvaId=0, muon_mvaLowPtId=0, muon_pfIsoId=0, muon_tkIsoId=0;
@@ -147,6 +147,19 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if (muon.passed(reco::Muon::SoftMvaId)) muon_softMvaId=1;
       if (muon.passed(reco::Muon::TkIsoLoose)) muon_tkIsoId=1;
       if (muon.passed(reco::Muon::TkIsoTight)) muon_tkIsoId=2;
+      muon_pfRelIso04_chgPV=muon.pfIsolationR04().sumChargedHadronPt/muon_pt;
+      muon_pfRelIso04_nhad=muon.pfIsolationR04().sumNeutralHadronEt/muon_pt; 
+      muon_pfRelIso04_pho=muon.pfIsolationR04().sumPhotonEt/muon_pt;
+      muon_pfRelIso04_chgPU=muon.pfIsolationR04().sumPUPt/muon_pt;
+      muon_pfRelIso04_all=(muon.pfIsolationR04().sumChargedHadronPt+std::max(0.,muon.pfIsolationR04().sumNeutralHadronEt+muon.pfIsolationR04().sumPhotonEt-0.5*muon.pfIsolationR04().sumPUPt))/muon_pt;
+      muon_pfRelIso03_chgPV=muon.pfIsolationR03().sumChargedHadronPt/muon_pt;
+      muon_pfRelIso03_nhad=muon.pfIsolationR03().sumNeutralHadronEt/muon_pt;    
+      muon_pfRelIso03_pho=muon.pfIsolationR03().sumPhotonEt/muon_pt;
+      muon_pfRelIso03_chgPU=muon.pfIsolationR03().sumPUPt/muon_pt;
+      muon_pfRelIso03_all=(muon.pfIsolationR03().sumChargedHadronPt+std::max(0.,muon.pfIsolationR03().sumNeutralHadronEt+muon.pfIsolationR03().sumPhotonEt-0.5*muon.pfIsolationR03().sumPUPt))/muon_pt;
+      muon_tkRelIso=muon.isolationR03().sumPt/muon_pt;
+      muon_dxy=muon.muonBestTrack()->dxy(primaryvertex.position());
+      muon_dz=muon.muonBestTrack()->dz(primaryvertex.position());
       //muon_pfIsoLoose=muon.passed(muon.PFIsoLoose);
       //muon_pfIsoMedium=muon.passed(muon.PFIsoMedium);
       //muon_pfIsoTight=muon.passed(muon.PFIsoTight);
@@ -155,7 +168,12 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << " isTightMuon:" << muon_tightId << "isSoftMuon:" << muon_softId << " muon_highPtId:" << (int)muon_highPtId << " muon_miniIsoId:";
       std::cout << (int)muon_miniIsoId << " muon_multiIsoId:" << (int)muon_multiIsoId << " muon_mvaId:" << (int)muon_mvaId << " muon_mvaLowPtId:" << (int)muon_mvaLowPtId;
       std::cout << " muon_pfIsoId:" << (int)muon_pfIsoId << " muon_softMvaId:" << muon_softMvaId << "muon_tkIsoId:" << (int)muon_tkIsoId;
-      std::cout << " isTrackerMuon:" << muon_isTracker << " isGlobalMuon:" << muon_isGlobal << " isStandaloneMuon" << muon_isStandalone << " isPFMuon:"<<  muon_isPF<<"\n";
+      std::cout << " isTrackerMuon:" << muon_isTracker << " isGlobalMuon:" << muon_isGlobal << " isStandaloneMuon" << muon_isStandalone << " isPFMuon:"<<  muon_isPF;
+      std::cout << " pfRelIso04 charged from PV:" << muon_pfRelIso04_chgPV << " pfRelIso04 charged from PU:" << muon_pfRelIso04_chgPU;
+      std::cout << " pfRelIso04 neutral hadrons:" << muon_pfRelIso04_nhad << " pfRelIso04 photons:" << muon_pfRelIso04_pho << " total pfRelIso04:" << muon_pfRelIso04_all;
+      std::cout << " pfRelIso03 charged from PV:" << muon_pfRelIso03_chgPV << " pfRelIso03 charged from PU:" << muon_pfRelIso03_chgPU;
+      std::cout << " pfRelIso03 neutral hadrons:" << muon_pfRelIso03_nhad << " pfRelIso03 photons:" << muon_pfRelIso03_pho << " total pfRelIso03:" << muon_pfRelIso03_all;
+      std::cout << " tkRelIso:" << muon_tkRelIso << "dxy wrt first PV (signed):"<< muon_dxy << " dz wrt first PV:"<< muon_dz <<"\n";
       i++;
 }
    nmuon=i+1;
