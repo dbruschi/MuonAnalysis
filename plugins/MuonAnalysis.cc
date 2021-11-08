@@ -34,6 +34,7 @@
 
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
+#include "DataFormats/BeamSpot/interface/BeamSpot.h"
 //
 // class declaration
 //
@@ -60,6 +61,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       // ----------member data ---------------------------
       edm::EDGetTokenT<std::vector<pat::Muon> > muonToken_;
       edm::EDGetTokenT<std::vector<reco::Vertex> > vertexToken_;
+      edm::EDGetTokenT<reco::BeamSpot> beamspotToken_;
 };
 
 //
@@ -80,6 +82,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 {
    //now do what ever initialization is needed
     vertexToken_=consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertices"));
+    beamspotToken_=consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot"));
 }
 
 
@@ -102,11 +105,14 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
    unsigned int i=0, nmuon=0;
-   float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all, muon_pfRelIso04_chgPV, muon_pfRelIso04_chgPU, muon_pfRelIso04_nhad, muon_pfRelIso04_pho, muon_pfRelIso03_all, muon_pfRelIso03_chgPV, muon_pfRelIso03_chgPU, muon_pfRelIso03_nhad, muon_pfRelIso03_pho, muon_tkRelIso, muon_dxy, muon_dz;
+   float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all, muon_pfRelIso04_chgPV, muon_pfRelIso04_chgPU, muon_pfRelIso04_nhad, muon_pfRelIso04_pho, muon_pfRelIso03_all;
+   float muon_pfRelIso03_chgPV, muon_pfRelIso03_chgPU, muon_pfRelIso03_nhad, muon_pfRelIso03_pho, muon_tkRelIso, muon_dxy, muon_dxyErr, muon_dz, muon_dzErr, muon_dxyBS, muon_dzBS;
+   float pv_chi2, pv_ndof, pv_score, pv_x, pv_y, pv_z, beamspot_x0, beamspot_y0, beamspot_z0;
    bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
    unsigned char muon_highPtId=0, muon_miniIsoId=0, muon_multiIsoId=0, muon_mvaId=0, muon_mvaLowPtId=0, muon_pfIsoId=0, muon_tkIsoId=0;
    reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
+   reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
@@ -159,11 +165,24 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       muon_pfRelIso03_all=(muon.pfIsolationR03().sumChargedHadronPt+std::max(0.,muon.pfIsolationR03().sumNeutralHadronEt+muon.pfIsolationR03().sumPhotonEt-0.5*muon.pfIsolationR03().sumPUPt))/muon_pt;
       muon_tkRelIso=muon.isolationR03().sumPt/muon_pt;
       muon_dxy=muon.muonBestTrack()->dxy(primaryvertex.position());
+      muon_dxyErr=muon.muonBestTrack()->dxyError(primaryvertex.position(),primaryvertex.covariance());
       muon_dz=muon.muonBestTrack()->dz(primaryvertex.position());
+      muon_dzErr=muon.muonBestTrack()->dzError();
+      muon_dxyBS=muon.muonBestTrack()->dxy(beamspot.position());
+      muon_dzBS=muon.muonBestTrack()->dz(beamspot.position());
+      muon_charge=muon.charge();
+      pv_x=primaryvertex.x();
+      pv_y=primaryvertex.y();
+      pv_z=primaryvertex.z();
+      pv_chi2=primaryvertex.normalizedChi2();
+      pv_ndof=primaryvertex.ndof();
+      beamspot_x0=beamspot.x0();
+      beamspot_y0=beamspot.y0();
+      beamspot_z0=beamspot.z0();
       //muon_pfIsoLoose=muon.passed(muon.PFIsoLoose);
       //muon_pfIsoMedium=muon.passed(muon.PFIsoMedium);
       //muon_pfIsoTight=muon.passed(muon.PFIsoTight);
-      std::cout << "Muon n." << i << " Muon pt" << muon_pt << " Muon eta" << muon_eta << " Muon phi" << muon_phi << " Muon mass" << muon_mass;
+      std::cout << "Muon n." << i << " Muon charge:" << muon_charge << " Muon pt" << muon_pt << " Muon eta" << muon_eta << " Muon phi" << muon_phi << " Muon mass" << muon_mass;
       std::cout << " isLooseMuon:" << muon_looseId << " isMediumMuon:" << muon_mediumId << " isMediumPromptMuon: "<< muon_mediumPromptId ;
       std::cout << " isTightMuon:" << muon_tightId << "isSoftMuon:" << muon_softId << " muon_highPtId:" << (int)muon_highPtId << " muon_miniIsoId:";
       std::cout << (int)muon_miniIsoId << " muon_multiIsoId:" << (int)muon_multiIsoId << " muon_mvaId:" << (int)muon_mvaId << " muon_mvaLowPtId:" << (int)muon_mvaLowPtId;
@@ -173,12 +192,13 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << " pfRelIso04 neutral hadrons:" << muon_pfRelIso04_nhad << " pfRelIso04 photons:" << muon_pfRelIso04_pho << " total pfRelIso04:" << muon_pfRelIso04_all;
       std::cout << " pfRelIso03 charged from PV:" << muon_pfRelIso03_chgPV << " pfRelIso03 charged from PU:" << muon_pfRelIso03_chgPU;
       std::cout << " pfRelIso03 neutral hadrons:" << muon_pfRelIso03_nhad << " pfRelIso03 photons:" << muon_pfRelIso03_pho << " total pfRelIso03:" << muon_pfRelIso03_all;
-      std::cout << " tkRelIso:" << muon_tkRelIso << "dxy wrt first PV (signed):"<< muon_dxy << " dz wrt first PV:"<< muon_dz <<"\n";
+      std::cout << " tkRelIso:" << muon_tkRelIso << " dxy wrt first PV (signed):"<< muon_dxy << " dxyError:"<< muon_dxyErr << " dz wrt first PV:"<< muon_dz << " dzError:"<< muon_dzErr << " dxy wrt BeamSpot (signed):"<< muon_dxyBS << " dz wrt BeamSpot:"<< muon_dzBS<<"\n";
       i++;
 }
    nmuon=i+1;
    std::cout<<nmuon<<"\n";
-   std::cout<<"First Primary Vertex x:"<<primaryvertex.x()<<" y:"<<primaryvertex.y()<<" z:"<<primaryvertex.z()<<"\n";
+   std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
+   std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
