@@ -16,7 +16,8 @@ process.source = cms.Source("PoolSource",
 process.demo = cms.EDAnalyzer('MuonAnalysis',
    muons    = cms.untracked.InputTag('slimmedMuons'),
    vertices = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'),
-   beamspot = cms.untracked.InputTag('offlineBeamSpot')
+   beamspot = cms.untracked.InputTag('offlineBeamSpot'),
+   genvertex= cms.untracked.InputTag('genParticles','xyz0')   
                               )
 
 process.p = cms.Path(process.demo)

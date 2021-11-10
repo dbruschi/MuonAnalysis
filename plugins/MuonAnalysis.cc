@@ -35,6 +35,7 @@
 #include "DataFormats/PatCandidates/interface/Muon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
+
 //
 // class declaration
 //
@@ -62,6 +63,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<std::vector<pat::Muon> > muonToken_;
       edm::EDGetTokenT<std::vector<reco::Vertex> > vertexToken_;
       edm::EDGetTokenT<reco::BeamSpot> beamspotToken_;
+      edm::EDGetTokenT<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> > genvertexToken_;
 };
 
 //
@@ -83,6 +85,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
    //now do what ever initialization is needed
     vertexToken_=consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertices"));
     beamspotToken_=consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot"));
+    genvertexToken_=consumes<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> >(iConfig.getUntrackedParameter<edm::InputTag>("genvertex"));
 }
 
 
@@ -110,9 +113,11 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    float pv_chi2, pv_ndof, pv_score, pv_x, pv_y, pv_z, beamspot_x0, beamspot_y0, beamspot_z0;
    bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
+   int muon_BestTrackAlgo;
    unsigned char muon_highPtId=0, muon_miniIsoId=0, muon_multiIsoId=0, muon_mvaId=0, muon_mvaLowPtId=0, muon_pfIsoId=0, muon_tkIsoId=0;
    reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
    reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
+   ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
@@ -171,6 +176,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       muon_dxyBS=muon.muonBestTrack()->dxy(beamspot.position());
       muon_dzBS=muon.muonBestTrack()->dz(beamspot.position());
       muon_charge=muon.charge();
+      muon_BestTrackAlgo=muon.muonBestTrack()->algo();
       pv_x=primaryvertex.x();
       pv_y=primaryvertex.y();
       pv_z=primaryvertex.z();
@@ -192,13 +198,15 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << " pfRelIso04 neutral hadrons:" << muon_pfRelIso04_nhad << " pfRelIso04 photons:" << muon_pfRelIso04_pho << " total pfRelIso04:" << muon_pfRelIso04_all;
       std::cout << " pfRelIso03 charged from PV:" << muon_pfRelIso03_chgPV << " pfRelIso03 charged from PU:" << muon_pfRelIso03_chgPU;
       std::cout << " pfRelIso03 neutral hadrons:" << muon_pfRelIso03_nhad << " pfRelIso03 photons:" << muon_pfRelIso03_pho << " total pfRelIso03:" << muon_pfRelIso03_all;
-      std::cout << " tkRelIso:" << muon_tkRelIso << " dxy wrt first PV (signed):"<< muon_dxy << " dxyError:"<< muon_dxyErr << " dz wrt first PV:"<< muon_dz << " dzError:"<< muon_dzErr << " dxy wrt BeamSpot (signed):"<< muon_dxyBS << " dz wrt BeamSpot:"<< muon_dzBS<<"\n";
+      std::cout << " tkRelIso:" << muon_tkRelIso << " dxy wrt first PV (signed):"<< muon_dxy << " dxyError:"<< muon_dxyErr << " dz wrt first PV:"<< muon_dz;
+      std::cout << " dzError:"<< muon_dzErr << " dxy wrt BeamSpot (signed):"<< muon_dxyBS << " dz wrt BeamSpot:"<< muon_dzBS<< " besttracktype:" <<muon.muonBestTrackType()<<" besttrackalgo:" << muon_BestTrackAlgo <<"\n";
       i++;
 }
    nmuon=i+1;
    std::cout<<nmuon<<"\n";
    std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
    std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";
+   std::cout<<"GenVertex x:"<<genvertex.x()<<" y:"<<genvertex.y()<<" z:"<<genvertex.z()<<"\n";
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
