@@ -110,7 +110,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    unsigned int i=0, nmuon=0;
    float muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all, muon_pfRelIso04_chgPV, muon_pfRelIso04_chgPU, muon_pfRelIso04_nhad, muon_pfRelIso04_pho, muon_pfRelIso03_all;
    float muon_pfRelIso03_chgPV, muon_pfRelIso03_chgPU, muon_pfRelIso03_nhad, muon_pfRelIso03_pho, muon_tkRelIso, muon_dxy, muon_dxyErr, muon_dz, muon_dzErr, muon_dxyBS, muon_dzBS;
-   float pv_chi2, pv_ndof, pv_score, pv_x, pv_y, pv_z, beamspot_x0, beamspot_y0, beamspot_z0;
+   float pv_chi2, pv_ndof, pv_score, pv_x, pv_y, pv_z, beamspot_x0, beamspot_y0, beamspot_z0, genvertex_x, genvertex_y, genvertex_z;
    bool muon_isTracker, muon_isGlobal, muon_isStandalone, muon_looseId, muon_mediumId, muon_mediumPromptId, muon_tightId, muon_softId, muon_isPF, muon_softMvaId;
    int muon_charge;
    int muon_BestTrackAlgo;
@@ -177,14 +177,6 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       muon_dzBS=muon.muonBestTrack()->dz(beamspot.position());
       muon_charge=muon.charge();
       muon_BestTrackAlgo=muon.muonBestTrack()->algo();
-      pv_x=primaryvertex.x();
-      pv_y=primaryvertex.y();
-      pv_z=primaryvertex.z();
-      pv_chi2=primaryvertex.normalizedChi2();
-      pv_ndof=primaryvertex.ndof();
-      beamspot_x0=beamspot.x0();
-      beamspot_y0=beamspot.y0();
-      beamspot_z0=beamspot.z0();
       //muon_pfIsoLoose=muon.passed(muon.PFIsoLoose);
       //muon_pfIsoMedium=muon.passed(muon.PFIsoMedium);
       //muon_pfIsoTight=muon.passed(muon.PFIsoTight);
@@ -203,10 +195,21 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       i++;
 }
    nmuon=i+1;
+   pv_x=primaryvertex.x();
+   pv_y=primaryvertex.y();
+   pv_z=primaryvertex.z();
+   pv_chi2=primaryvertex.normalizedChi2();
+   pv_ndof=primaryvertex.ndof();
+   beamspot_x0=beamspot.x0();
+   beamspot_y0=beamspot.y0();
+   beamspot_z0=beamspot.z0();
+   genvertex_x=genvertex.x();
+   genvertex_y=genvertex.y();
+   genvertex_z=genvertex.z();
    std::cout<<nmuon<<"\n";
    std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
    std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";
-   std::cout<<"GenVertex x:"<<genvertex.x()<<" y:"<<genvertex.y()<<" z:"<<genvertex.z()<<"\n";
+   std::cout<<"GenVertex x:"<<genvertex_x<<" y:"<<genvertex_y<<" z:"<<genvertex_z<<"\n";
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
    ESHandle<SetupData> pSetup;
