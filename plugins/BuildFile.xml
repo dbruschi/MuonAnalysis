@@ -5,4 +5,6 @@
 <use name="DataFormats/VertexReco"/>
 <use name="DataFormats/PatCandidates"/>
 <use name="DataFormats/BeamSpot"/>
+<use name="PhysicsTools/UtilAlgos"/>
+<use name="FWCore/ServiceRegistry"/>
 <flags EDM_PLUGIN="1"/>

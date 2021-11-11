@@ -20,4 +20,6 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    genvertex= cms.untracked.InputTag('genParticles','xyz0')   
                               )
 
+process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaod.root") )
+
 process.p = cms.Path(process.demo)
