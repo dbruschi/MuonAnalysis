@@ -52,7 +52,7 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
       prefsrlepidx.first = status746[0].second.pt() > (*pointer)[0].second.pt() ? status746[0].first : (*pointer)[0].first;
       prefsrlepidx.second = status746[0].second.pt() > (*pointer)[0].second.pt() ? (*pointer)[0].first : status746[0].first;
     }
-    else if (status746.size() == 0 and other.size() == 2)
+    else if (status746.size() == 0 and (*pointer).size() == 2)
     {
       prefsrlepidx.first = (*pointer)[0].second.pt() > (*pointer)[1].second.pt() ? (*pointer)[0].first : (*pointer)[1].first;
       prefsrlepidx.second = (*pointer)[0].second.pt() > (*pointer)[1].second.pt() ? (*pointer)[1].first : (*pointer)[0].first;
