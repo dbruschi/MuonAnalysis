@@ -19,6 +19,7 @@
 
 // system include files
 #include <memory>
+#include <algorithm>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -37,7 +38,10 @@
 #include "DataFormats/BeamSpot/interface/BeamSpot.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "getGenLeptonIdx.h"
 #include "TTree.h"
+#include "TLorentzVector.h"
 
 //
 // class declaration
@@ -67,15 +71,18 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<std::vector<reco::Vertex> > vertexToken_;
       edm::EDGetTokenT<reco::BeamSpot> beamspotToken_;
       edm::EDGetTokenT<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> > genvertexToken_;
+      edm::EDGetTokenT<std::vector<reco::GenParticle> > genparticleToken_;
       TTree * tree_;
-      UInt_t nMuon_;
+      UInt_t nMuon_, nGenPart_;
       Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100], Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
       Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100], Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
       Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
       Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100], Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100];
       Int_t Muon_charge_[100];
-      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_OuterTrackAlgo_[100];
+      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_OuterTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
       UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
+      Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500];
+      Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_;
 };
 
 //
@@ -98,6 +105,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     vertexToken_=consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertices"));
     beamspotToken_=consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot"));
     genvertexToken_=consumes<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> >(iConfig.getUntrackedParameter<edm::InputTag>("genvertex"));
+    genparticleToken_=consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genparticles"));
     edm::Service<TFileService> fs;
     tree_=fs->make<TTree>("Events","Events");
     tree_->Branch("nMuon", &nMuon_, "nMuon/i");
@@ -136,6 +144,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("Muon_BestTrackAlgo",&Muon_BestTrackAlgo_,"Muon_BestTrackAlgo[nMuon]/I");
     tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");
     tree_->Branch("Muon_OuterTrackAlgo",&Muon_OuterTrackAlgo_,"Muon_OuterTrackAlgo[nMuon]/I");
+    tree_->Branch("Muon_GlobalTrackAlgo",&Muon_GlobalTrackAlgo_,"Muon_GlobalTrackAlgo[nMuon]/I");
     tree_->Branch("Muon_highPtId",&Muon_highPtId_,"Muon_highPtId[nMuon]/b");
     tree_->Branch("Muon_miniIsoId",&Muon_miniIsoId_,"Muon_miniIsoId[nMuon]/b");
     tree_->Branch("Muon_multiIsoId",&Muon_multiIsoId_,"Muon_multiIsoId[nMuon]/b");
@@ -143,6 +152,32 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("Muon_mvaLowPtId",&Muon_mvaLowPtId_,"Muon_mvaLowPtId[nMuon]/b");
     tree_->Branch("Muon_pfIsoId",&Muon_pfIsoId_,"Muon_pfIsoId[nMuon]/b");
     tree_->Branch("Muon_tkIsoId",&Muon_tkIsoId_,"Muon_tkIsoId[nMuon]/b");
+    tree_->Branch("Muon_genPartIdx",&Muon_genPartIdx_,"Muon_genPartIdx[nMuon]/I");
+    tree_->Branch("Muon_genPartPreFSRIdx",&Muon_genPartPreFSRIdx_,"Muon_genPartPreFSRIdx[nMuon]/I");
+    tree_->Branch("PV_chi2",&PV_chi2_,"PV_chi2/F");
+    tree_->Branch("PV_ndof",&PV_ndof_,"PV_ndof/F"); 
+    tree_->Branch("PV_score",&PV_score_,"PV_score/F");
+    tree_->Branch("PV_x",&PV_x_,"PV_x/F");
+    tree_->Branch("PV_y",&PV_y_,"PV_y/F");
+    tree_->Branch("PV_z",&PV_z_,"PV_z/F");
+    tree_->Branch("BeamSpot_x0",&BeamSpot_x0_,"BeamSpot_x0/F");
+    tree_->Branch("BeamSpot_y0",&BeamSpot_y0_,"BeamSpot_y0/F");
+    tree_->Branch("BeamSpot_z0",&BeamSpot_z0_,"BeamSpot_z0/F");
+    tree_->Branch("GenVertex_x",&GenVertex_x_,"GenVertex_x/F");
+    tree_->Branch("GenVertex_y",&GenVertex_y_,"GenVertex_y/F");
+    tree_->Branch("GenVertex_z",&GenVertex_z_,"GenVertex_z/F");
+    tree_->Branch("nGenPart",&nGenPart_,"nGenPart/i");
+    tree_->Branch("GenPart_eta",&GenPart_eta_,"GenPart_eta[nGenPart]/F");
+    tree_->Branch("GenPart_mass",&GenPart_mass_,"GenPart_mass[nGenPart]/F");
+    tree_->Branch("GenPart_phi",&GenPart_phi_,"GenPart_phi[nGenPart]/F");
+    tree_->Branch("GenPart_pt",&GenPart_pt_,"GenPart_pt[nGenPart]/F");
+    tree_->Branch("GenPart_genPartIdxMother",&GenPart_genPartIdxMother_,"GenPart_genPartIdxMother[nGenPart]/I");
+    tree_->Branch("GenPart_pdgId",&GenPart_pdgId_,"GenPart_pdgId[nGenPart]/I");
+    tree_->Branch("GenPart_status",&GenPart_status_,"GenPart_status[nGenPart]/I");
+    tree_->Branch("GenPart_statusFlags",&GenPart_statusFlags_,"GenPart_statusFlags[nGenPart]/I");
+    tree_->Branch("GenPart_preFSRLepIdx1",&GenPart_preFSRLepIdx1_,"GenPart_preFSRLepIdx1/I");
+    tree_->Branch("GenPart_preFSRLepIdx2",&GenPart_preFSRLepIdx2_,"GenPart_preFSRLepIdx2/I");
+    tree_->SetAutoSave(0);
 }
 
 
@@ -175,6 +210,8 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
    reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
    ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
+   getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_,nGenPart_);
+   std::map<Double_t, std::pair<unsigned int,int> > distances;
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
@@ -286,6 +323,8 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       else Muon_InnerTrackAlgo_[i]=-1;
       if (!(muon.outerTrack().isNull())) Muon_OuterTrackAlgo_[i]=muon.outerTrack()->algo();
       else Muon_OuterTrackAlgo_[i]=-1;
+      if (!(muon.globalTrack().isNull())) Muon_GlobalTrackAlgo_[i]=muon.globalTrack()->algo();
+      else Muon_GlobalTrackAlgo_[i]=-1;
       Muon_highPtId_[i]=muon_highPtId;
       Muon_miniIsoId_[i]=muon_miniIsoId;
       Muon_multiIsoId_[i]=muon_multiIsoId;
@@ -293,20 +332,45 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Muon_mvaLowPtId_[i]=muon_mvaLowPtId;
       Muon_pfIsoId_[i]=muon_pfIsoId;
       Muon_tkIsoId_[i]=muon_tkIsoId;
+      Muon_genPartIdx_[i]=-1;
+      Muon_genPartPreFSRIdx_[i]=-1;
+      int j=0;
+      for (const auto& genparticle : iEvent.get(genparticleToken_)) {
+         if (abs(genparticle.pdgId())==13) {if (genparticle.status()==1) if (muon.genLepton()==&genparticle) Muon_genPartIdx_[i]=j;
+             if ((j==GenPart_preFSRLepIdx1_)||(j==GenPart_preFSRLepIdx2_)) {
+                 TLorentzVector mu, gp;
+                 mu.SetPtEtaPhiM(muon.pt(),muon.eta(),muon.phi(),muon.mass());
+                 gp.SetPtEtaPhiM(genparticle.pt(),genparticle.eta(),genparticle.phi(),genparticle.mass());
+                 distances.insert({mu.DeltaR(gp),std::make_pair(i,j)});
+             }
+         }
+         j++;
+      }
       i++;
-}
+   }
+   std::vector<unsigned int> forbiddenindicesmu;
+   std::vector<int> forbiddenindicesgp;
+   for (std::map<Double_t, std::pair<unsigned int,int> >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
+      if (!(std::find(forbiddenindicesmu.begin(), forbiddenindicesmu.end(), it->second.first) != forbiddenindicesmu.end())) {
+           if (!(std::find(forbiddenindicesgp.begin(), forbiddenindicesgp.end(), it->second.second) != forbiddenindicesgp.end())) {
+               Muon_genPartPreFSRIdx_[it->second.first]=it->second.second; 
+               forbiddenindicesmu.push_back(it->second.first);
+               forbiddenindicesgp.push_back(it->second.second);
+           }
+      }     
+   }
    nMuon_=nmuon=i;
-   pv_x=primaryvertex.x();
-   pv_y=primaryvertex.y();
-   pv_z=primaryvertex.z();
-   pv_chi2=primaryvertex.normalizedChi2();
-   pv_ndof=primaryvertex.ndof();
-   beamspot_x0=beamspot.x0();
-   beamspot_y0=beamspot.y0();
-   beamspot_z0=beamspot.z0();
-   genvertex_x=genvertex.x();
-   genvertex_y=genvertex.y();
-   genvertex_z=genvertex.z();
+   PV_x_=pv_x=primaryvertex.x();
+   PV_y_=pv_y=primaryvertex.y();
+   PV_z_=pv_z=primaryvertex.z();
+   PV_chi2_=pv_chi2=primaryvertex.normalizedChi2();
+   PV_ndof_=pv_ndof=primaryvertex.ndof();
+   BeamSpot_x0_=beamspot_x0=beamspot.x0();
+   BeamSpot_y0_=beamspot_y0=beamspot.y0();
+   BeamSpot_z0_=beamspot_z0=beamspot.z0();
+   GenVertex_x_=genvertex_x=genvertex.x();
+   GenVertex_y_=genvertex_y=genvertex.y();
+   GenVertex_z_=genvertex_z=genvertex.z();
    std::cout<<nmuon<<"\n";
    std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
    std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";

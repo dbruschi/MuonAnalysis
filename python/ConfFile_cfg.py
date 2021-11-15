@@ -17,7 +17,8 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    muons    = cms.untracked.InputTag('slimmedMuons'),
    vertices = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'),
    beamspot = cms.untracked.InputTag('offlineBeamSpot'),
-   genvertex= cms.untracked.InputTag('genParticles','xyz0')   
+   genvertex= cms.untracked.InputTag('genParticles','xyz0'),   
+   genparticles = cms.untracked.InputTag('prunedGenParticles')
                               )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaod.root") )
