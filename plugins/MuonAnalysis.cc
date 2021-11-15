@@ -39,7 +39,7 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
-#include "getGenLeptonIdx.h"
+#include "functions.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
 
