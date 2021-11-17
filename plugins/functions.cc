@@ -1,10 +1,15 @@
+#include <algorithm>
 #include "functions.h"
+
+bool genleptoncompare (std::pair<int, float> i, std::pair<int, float> j) { 
+    return (i.second>j.second);
+}
 
 //implentation in the NanoAOD files of the GenPart collection and selection of the PreFSR generator leptons
 ////logic for the generator lepton selection included from here: https://github.com/emanca/wproperties-analysis/blob/master/nanotools/src/genLeptonSelector.cpp
 void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, UInt_t& nGenPart_) {
-    std::vector<std::pair<int, const reco::GenParticle&> > status746;
-    std::vector<std::pair<int, const reco::GenParticle&> > other;
+    std::vector<int> status746(0);
+    std::vector<int> other(0);
     unsigned int j=0;
     for (auto const& genparticle : genparticles) {
       GenPart_eta_[j]=genparticle.eta();
@@ -20,42 +25,43 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
         if (abs(genparticle.pdgId()) >= 11 && abs(genparticle.pdgId()) <= 16) {
           if (abs(mompdgId) == 23 || abs(mompdgId) == 24) {                       //
             if (genparticle.status() == 746) //status 746 is pre photos FSR in new powheg samples. so if they exist we want those.
-              status746.push_back(std::make_pair(j, std::ref(genparticle)));
-            else
-              other.push_back(std::make_pair(j, std::ref(genparticle)));
+              status746.push_back(j);
+            else 
+              other.push_back(j);
           }
           else if (genparticle.status() == 23) //in madgraph5_aMC@NLO there are some events without a W/Z, those have status 23 leptons (tested on >1M events)
-            other.push_back(std::make_pair(j, std::ref(genparticle)));
+            other.push_back(j);
         }
       }
       j++;
     }
     nGenPart_=j;
-
-    std::vector<std::pair<int, const reco::GenParticle&> > *pointer=&other;
     if (other.size() > 2) {
-      std::vector<std::pair<int, const reco::GenParticle&> > otherTmp;
-      for (auto const& gp : other) {
-        if ((gp.second.statusFlags().flags_.to_ulong() >> 8) & 1) otherTmp.push_back(gp);
+      std::vector<int> otherTmp;
+      for (unsigned int h=0; h!=other.size(); h++) {
+        if (((genparticles[other[h]]).statusFlags().flags_.to_ulong() >> 8) & 1) otherTmp.push_back(other[h]);
       }
-      pointer = &otherTmp;
+      other = otherTmp;
     }
-    std::pair<int, int> prefsrlepidx(-1, -1);
-    if (status746.size() == 2)
-    {
-      prefsrlepidx.first = status746[0].second.pt() > status746[1].second.pt() ? status746[0].first : status746[1].first;
-      prefsrlepidx.second = status746[0].second.pt() > status746[1].second.pt() ? status746[1].first : status746[0].first;
+    std::vector<std::pair<int, float> > prefsrleptons(0);
+    for (unsigned int h=0; h!=status746.size(); h++) {
+      prefsrleptons.push_back({status746[h],(genparticles[status746[h]]).pt()});
     }
-    else if (status746.size() == 1 || (*pointer).size() == 1)
-    {
-      prefsrlepidx.first = status746[0].second.pt() > (*pointer)[0].second.pt() ? status746[0].first : (*pointer)[0].first;
-      prefsrlepidx.second = status746[0].second.pt() > (*pointer)[0].second.pt() ? (*pointer)[0].first : status746[0].first;
+    for (unsigned int h=0; h!=other.size(); h++) {
+      prefsrleptons.push_back({other[h],(genparticles[other[h]]).pt()});
     }
-    else if (status746.size() == 0 and (*pointer).size() == 2)
-    {
-      prefsrlepidx.first = (*pointer)[0].second.pt() > (*pointer)[1].second.pt() ? (*pointer)[0].first : (*pointer)[1].first;
-      prefsrlepidx.second = (*pointer)[0].second.pt() > (*pointer)[1].second.pt() ? (*pointer)[1].first : (*pointer)[0].first;
-    } 
-    GenPart_preFSRLepIdx1=prefsrlepidx.first;
-    GenPart_preFSRLepIdx2=prefsrlepidx.second;
+    sort(prefsrleptons.begin(),prefsrleptons.begin()+status746.size(),genleptoncompare); //priority given to status746 particles, therefore they have the first indices
+    sort(prefsrleptons.begin()+status746.size(),prefsrleptons.end(),genleptoncompare); //then the other final state prefsr particles are added (what it is done here: https://github.com/WMass/nanoAOD-tools/blob/master/python/postprocessing/wmass/genLepSelection.py)
+    if (prefsrleptons.size()==0) {
+      GenPart_preFSRLepIdx1 = -1;
+      GenPart_preFSRLepIdx2 = -1;
+    }
+    else if (prefsrleptons.size()==1) {
+      GenPart_preFSRLepIdx1 = (prefsrleptons[0]).first;
+      GenPart_preFSRLepIdx2 = -1;
+    }
+    else {
+      GenPart_preFSRLepIdx1 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[0]).first : (prefsrleptons[1]).first;
+      GenPart_preFSRLepIdx2 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[1]).first : (prefsrleptons[0]).first;
+    }
 }

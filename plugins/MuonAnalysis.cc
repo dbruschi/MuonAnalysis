@@ -52,6 +52,9 @@
 // from  edm::one::EDAnalyzer<>
 // This will improve performance in multithreaded jobs.
 
+bool distancesort(std::pair<Double_t,std::pair<UInt_t, Int_t> > i, std::pair<Double_t,std::pair<UInt_t, Int_t> > j) {
+   return (i.first<j.first);
+}
 
 class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
    public:
@@ -79,7 +82,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
       Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100], Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100];
       Int_t Muon_charge_[100];
-      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_OuterTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
+      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
       UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
       Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500];
       Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_;
@@ -142,8 +145,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("Muon_softMvaId",&Muon_softMvaId_,"Muon_softMvaId[nMuon]/O");
     tree_->Branch("Muon_charge",&Muon_charge_,"Muon_charge[nMuon]/I");
     tree_->Branch("Muon_BestTrackAlgo",&Muon_BestTrackAlgo_,"Muon_BestTrackAlgo[nMuon]/I");
-    tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");
-    tree_->Branch("Muon_OuterTrackAlgo",&Muon_OuterTrackAlgo_,"Muon_OuterTrackAlgo[nMuon]/I");
+    tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");    
     tree_->Branch("Muon_GlobalTrackAlgo",&Muon_GlobalTrackAlgo_,"Muon_GlobalTrackAlgo[nMuon]/I");
     tree_->Branch("Muon_highPtId",&Muon_highPtId_,"Muon_highPtId[nMuon]/b");
     tree_->Branch("Muon_miniIsoId",&Muon_miniIsoId_,"Muon_miniIsoId[nMuon]/b");
@@ -199,7 +201,7 @@ void
 MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
    using namespace edm;
-   UInt_t i=0, nmuon=0;
+   UInt_t nmuon=0, i=0; 
    Float_t muon_pt, muon_eta, muon_phi, muon_mass, muon_pfRelIso04_all, muon_pfRelIso04_chgPV, muon_pfRelIso04_chgPU, muon_pfRelIso04_nhad, muon_pfRelIso04_pho, muon_pfRelIso03_all;
    Float_t muon_pfRelIso03_chgPV, muon_pfRelIso03_chgPU, muon_pfRelIso03_nhad, muon_pfRelIso03_pho, muon_tkRelIso, muon_dxy, muon_dxyErr, muon_dz, muon_dzErr, muon_dxyBS, muon_dzBS;
    Float_t pv_chi2, pv_ndof, pv_score, pv_x, pv_y, pv_z, beamspot_x0, beamspot_y0, beamspot_z0, genvertex_x, genvertex_y, genvertex_z;
@@ -211,7 +213,8 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
    ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
    getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_,nGenPart_);
-   std::map<Double_t, std::pair<unsigned int,int> > distances;
+   //std::map<Double_t, std::pair<int,int> > distances;
+   std::vector<std::pair<Double_t,std::pair<UInt_t, Int_t> > > distances; //slower workaround (std::pair::insert causes problems)
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
@@ -274,7 +277,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //muon_pfIsoLoose=muon.passed(muon.PFIsoLoose);
       //muon_pfIsoMedium=muon.passed(muon.PFIsoMedium);
       //muon_pfIsoTight=muon.passed(muon.PFIsoTight);
-      std::cout << "Muon n." << i << " Muon charge:" << muon_charge << " Muon pt" << muon_pt << " Muon eta" << muon_eta << " Muon phi" << muon_phi << " Muon mass" << muon_mass;
+/*      std::cout << "Muon n." << i << " Muon charge:" << muon_charge << " Muon pt" << muon_pt << " Muon eta" << muon_eta << " Muon phi" << muon_phi << " Muon mass" << muon_mass;
       std::cout << " isLooseMuon:" << muon_looseId << " isMediumMuon:" << muon_mediumId << " isMediumPromptMuon: "<< muon_mediumPromptId ;
       std::cout << " isTightMuon:" << muon_tightId << "isSoftMuon:" << muon_softId << " muon_highPtId:" << (int)muon_highPtId << " muon_miniIsoId:";
       std::cout << (int)muon_miniIsoId << " muon_multiIsoId:" << (int)muon_multiIsoId << " muon_mvaId:" << (int)muon_mvaId << " muon_mvaLowPtId:" << (int)muon_mvaLowPtId;
@@ -285,7 +288,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       std::cout << " pfRelIso03 charged from PV:" << muon_pfRelIso03_chgPV << " pfRelIso03 charged from PU:" << muon_pfRelIso03_chgPU;
       std::cout << " pfRelIso03 neutral hadrons:" << muon_pfRelIso03_nhad << " pfRelIso03 photons:" << muon_pfRelIso03_pho << " total pfRelIso03:" << muon_pfRelIso03_all;
       std::cout << " tkRelIso:" << muon_tkRelIso << " dxy wrt first PV (signed):"<< muon_dxy << " dxyError:"<< muon_dxyErr << " dz wrt first PV:"<< muon_dz;
-      std::cout << " dzError:"<< muon_dzErr << " dxy wrt BeamSpot (signed):"<< muon_dxyBS << " dz wrt BeamSpot:"<< muon_dzBS<< " besttracktype:" <<muon.muonBestTrackType()<<" besttrackalgo:" << muon_BestTrackAlgo <<"\n";
+      std::cout << " dzError:"<< muon_dzErr << " dxy wrt BeamSpot (signed):"<< muon_dxyBS << " dz wrt BeamSpot:"<< muon_dzBS<< " besttracktype:" <<muon.muonBestTrackType()<<" besttrackalgo:" << muon_BestTrackAlgo <<"\n";*/
       Muon_pt_[i]=muon_pt;
       Muon_eta_[i]=muon_eta;
       Muon_phi_[i]=muon_phi;
@@ -321,8 +324,6 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Muon_BestTrackAlgo_[i]=muon_BestTrackAlgo;
       if (!(muon.innerTrack().isNull())) Muon_InnerTrackAlgo_[i]=muon.innerTrack()->algo();
       else Muon_InnerTrackAlgo_[i]=-1;
-      if (!(muon.outerTrack().isNull())) Muon_OuterTrackAlgo_[i]=muon.outerTrack()->algo();
-      else Muon_OuterTrackAlgo_[i]=-1;
       if (!(muon.globalTrack().isNull())) Muon_GlobalTrackAlgo_[i]=muon.globalTrack()->algo();
       else Muon_GlobalTrackAlgo_[i]=-1;
       Muon_highPtId_[i]=muon_highPtId;
@@ -336,30 +337,35 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Muon_genPartPreFSRIdx_[i]=-1;
       int j=0;
       for (const auto& genparticle : iEvent.get(genparticleToken_)) {
-         if (abs(genparticle.pdgId())==13) {if (genparticle.status()==1) if (muon.genLepton()==&genparticle) Muon_genPartIdx_[i]=j;
+         if (abs(genparticle.pdgId())==13) {
+             if (genparticle.status()==1) 
+                 if (muon.genLepton()==&genparticle) Muon_genPartIdx_[i]=j;
              if ((j==GenPart_preFSRLepIdx1_)||(j==GenPart_preFSRLepIdx2_)) {
                  TLorentzVector mu, gp;
                  mu.SetPtEtaPhiM(muon.pt(),muon.eta(),muon.phi(),muon.mass());
                  gp.SetPtEtaPhiM(genparticle.pt(),genparticle.eta(),genparticle.phi(),genparticle.mass());
-                 distances.insert({mu.DeltaR(gp),std::make_pair(i,j)});
+                 distances.push_back({mu.DeltaR(gp),{i,j}});
              }
          }
          j++;
       }
       i++;
    }
+   sort(distances.begin(),distances.end(),distancesort);
+   nMuon_=nmuon=i;
    std::vector<unsigned int> forbiddenindicesmu;
    std::vector<int> forbiddenindicesgp;
-   for (std::map<Double_t, std::pair<unsigned int,int> >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
+   for (std::vector<std::pair<Double_t, std::pair<unsigned int,int> > >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
+      if (it->first>0.5) continue; //maxDeltaR<0.5. From here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
+      if (abs(iEvent.get(muonToken_)[it->second.first].pt()-iEvent.get(genparticleToken_)[it->second.second].pt())/iEvent.get(genparticleToken_)[it->second.second].pt()>0.5) continue; //maxdptrel <0.5. from here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
       if (!(std::find(forbiddenindicesmu.begin(), forbiddenindicesmu.end(), it->second.first) != forbiddenindicesmu.end())) {
            if (!(std::find(forbiddenindicesgp.begin(), forbiddenindicesgp.end(), it->second.second) != forbiddenindicesgp.end())) {
                Muon_genPartPreFSRIdx_[it->second.first]=it->second.second; 
                forbiddenindicesmu.push_back(it->second.first);
                forbiddenindicesgp.push_back(it->second.second);
            }
-      }     
+      }
    }
-   nMuon_=nmuon=i;
    PV_x_=pv_x=primaryvertex.x();
    PV_y_=pv_y=primaryvertex.y();
    PV_z_=pv_z=primaryvertex.z();
@@ -371,10 +377,10 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    GenVertex_x_=genvertex_x=genvertex.x();
    GenVertex_y_=genvertex_y=genvertex.y();
    GenVertex_z_=genvertex_z=genvertex.z();
-   std::cout<<nmuon<<"\n";
+   /*std::cout<<nmuon<<"\n";
    std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
    std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";
-   std::cout<<"GenVertex x:"<<genvertex_x<<" y:"<<genvertex_y<<" z:"<<genvertex_z<<"\n";
+   std::cout<<"GenVertex x:"<<genvertex_x<<" y:"<<genvertex_y<<" z:"<<genvertex_z<<"\n";*/
    tree_->Fill();
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
