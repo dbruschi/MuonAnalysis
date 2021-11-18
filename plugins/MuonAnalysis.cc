@@ -78,7 +78,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
       Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100], Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100];
       Int_t Muon_charge_[100];
-      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
+      Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100], Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
       UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
       Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500];
       Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_;
@@ -143,6 +143,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("Muon_BestTrackAlgo",&Muon_BestTrackAlgo_,"Muon_BestTrackAlgo[nMuon]/I");
     tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");    
     tree_->Branch("Muon_GlobalTrackAlgo",&Muon_GlobalTrackAlgo_,"Muon_GlobalTrackAlgo[nMuon]/I");
+    tree_->Branch("Muon_BestTrackOriginalAlgo",&Muon_BestTrackOriginalAlgo_,"Muon_BestTrackOriginalAlgo[nMuon]/I");
+    tree_->Branch("Muon_InnerTrackOriginalAlgo",&Muon_InnerTrackOriginalAlgo_,"Muon_InnerTrackOriginalAlgo[nMuon]/I");
+    tree_->Branch("Muon_GlobalTrackOriginalAlgo",&Muon_GlobalTrackOriginalAlgo_,"Muon_GlobalTrackOriginalAlgo[nMuon]/I");
     tree_->Branch("Muon_highPtId",&Muon_highPtId_,"Muon_highPtId[nMuon]/b");
     tree_->Branch("Muon_miniIsoId",&Muon_miniIsoId_,"Muon_miniIsoId[nMuon]/b");
     tree_->Branch("Muon_multiIsoId",&Muon_multiIsoId_,"Muon_multiIsoId[nMuon]/b");
@@ -323,10 +326,23 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Muon_softMvaId_[i]=muon_softMvaId;
       Muon_charge_[i]=muon_charge;
       Muon_BestTrackAlgo_[i]=muon_BestTrackAlgo;
-      if (!(muon.innerTrack().isNull())) Muon_InnerTrackAlgo_[i]=muon.innerTrack()->algo();
-      else Muon_InnerTrackAlgo_[i]=-1;
-      if (!(muon.globalTrack().isNull())) Muon_GlobalTrackAlgo_[i]=muon.globalTrack()->algo();
-      else Muon_GlobalTrackAlgo_[i]=-1;
+      Muon_BestTrackOriginalAlgo_[i]=muon.muonBestTrack()->originalAlgo();
+      if (!(muon.innerTrack().isNull())) {
+         Muon_InnerTrackAlgo_[i]=muon.innerTrack()->algo();
+         Muon_InnerTrackOriginalAlgo_[i]=muon.innerTrack()->originalAlgo();
+      }
+      else {
+         Muon_InnerTrackAlgo_[i]=-1;
+         Muon_InnerTrackOriginalAlgo_[i]=-1;
+      }
+      if (!(muon.globalTrack().isNull())) {
+         Muon_GlobalTrackAlgo_[i]=muon.globalTrack()->algo();
+         Muon_GlobalTrackOriginalAlgo_[i]=muon.globalTrack()->originalAlgo();
+      }
+      else {
+         Muon_GlobalTrackAlgo_[i]=-1;
+         Muon_GlobalTrackOriginalAlgo_[i]=-1;
+      }
       Muon_highPtId_[i]=muon_highPtId;
       Muon_miniIsoId_[i]=muon_miniIsoId;
       Muon_multiIsoId_[i]=muon_multiIsoId;
