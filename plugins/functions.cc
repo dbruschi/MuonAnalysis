@@ -1,13 +1,18 @@
 #include <algorithm>
 #include "functions.h"
+#include "TLorentzVector.h"
 
 bool genleptoncompare (std::pair<int, float> i, std::pair<int, float> j) { 
     return (i.second>j.second);
 }
 
+bool distancesort(std::pair<Double_t,std::pair<UInt_t, Int_t> > i, std::pair<Double_t,std::pair<UInt_t, Int_t> > j) {
+   return (i.first<j.first);
+}
+
 //implentation in the NanoAOD files of the GenPart collection and selection of the PreFSR generator leptons
 ////logic for the generator lepton selection included from here: https://github.com/emanca/wproperties-analysis/blob/master/nanotools/src/genLeptonSelector.cpp
-void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, UInt_t& nGenPart_) {
+void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, Int_t& GenPart_postFSRLepIdx1_, Int_t& GenPart_postFSRLepIdx2_, UInt_t& nGenPart_, UInt_t& nGenPartPreFSR_, UInt_t& nGenMuonPreFSR_, UInt_t& nGenPart746_) {
     std::vector<int> status746(0);
     std::vector<int> other(0);
     unsigned int j=0;
@@ -50,6 +55,12 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     for (unsigned int h=0; h!=other.size(); h++) {
       prefsrleptons.push_back({other[h],(genparticles[other[h]]).pt()});
     }
+    nGenPart746_=status746.size();
+    nGenPartPreFSR_=prefsrleptons.size();
+    nGenMuonPreFSR_=0;
+    for (unsigned int h=0; h!=prefsrleptons.size(); h++) {
+      if (abs(genparticles[prefsrleptons[h].first].pdgId())==13) nGenMuonPreFSR_++;
+    }
     sort(prefsrleptons.begin(),prefsrleptons.begin()+status746.size(),genleptoncompare); //priority given to status746 particles, therefore they have the first indices
     sort(prefsrleptons.begin()+status746.size(),prefsrleptons.end(),genleptoncompare); //then the other final state prefsr particles are added (what it is done here: https://github.com/WMass/nanoAOD-tools/blob/master/python/postprocessing/wmass/genLepSelection.py)
     if (prefsrleptons.size()==0) {
@@ -63,5 +74,39 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     else {
       GenPart_preFSRLepIdx1 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[0]).first : (prefsrleptons[1]).first;
       GenPart_preFSRLepIdx2 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[1]).first : (prefsrleptons[0]).first;
+    }
+    std::vector<std::pair<Double_t, std::pair<Int_t,Int_t> > > distances;
+    int h=0;
+    for (auto const& genparticle : genparticles) { //i would like to avoid this concatenated double lopp
+      int j=0;
+      for (auto const& gp2: genparticles) {
+         if (genparticle.status()==1) {
+            if ((j==GenPart_preFSRLepIdx1)||(j==GenPart_preFSRLepIdx2)) {
+               TLorentzVector A, B;
+               A.SetPtEtaPhiM(gp2.pt(),gp2.eta(),gp2.phi(),gp2.mass());
+               B.SetPtEtaPhiM(genparticle.pt(),genparticle.eta(),genparticle.phi(),genparticle.mass());
+               distances.push_back({A.DeltaR(B),{h,j}});
+            }
+         }
+         j++;
+      }
+      h++;
+    }
+    GenPart_postFSRLepIdx1_=-1;
+    GenPart_postFSRLepIdx2_=-1;
+    sort(distances.begin(),distances.end(),distancesort);
+    std::vector<int> forbiddenindicesgp1;
+    std::vector<int> forbiddenindicesgp2;
+    for (std::vector<std::pair<Double_t, std::pair<int,int> > >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
+       if (it->first>0.5) continue; //maxDeltaR<0.5. From here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
+       if (abs(genparticles[it->second.first].pt()-genparticles[it->second.second].pt())/genparticles[it->second.second].pt()>0.5) continue; //maxdptrel <0.5. from here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
+       if (!(std::find(forbiddenindicesgp1.begin(), forbiddenindicesgp1.end(), it->second.first) != forbiddenindicesgp1.end())) {
+            if (!(std::find(forbiddenindicesgp2.begin(), forbiddenindicesgp2.end(), it->second.second) != forbiddenindicesgp2.end())) {
+                if (GenPart_preFSRLepIdx1==it->second.second) GenPart_postFSRLepIdx1_=it->second.first;
+                if (GenPart_preFSRLepIdx2==it->second.second) GenPart_postFSRLepIdx2_=it->second.first;
+                forbiddenindicesgp1.push_back(it->second.first);
+                forbiddenindicesgp2.push_back(it->second.second);
+            }
+       }
     }
 }

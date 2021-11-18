@@ -52,10 +52,6 @@
 // from  edm::one::EDAnalyzer<>
 // This will improve performance in multithreaded jobs.
 
-bool distancesort(std::pair<Double_t,std::pair<UInt_t, Int_t> > i, std::pair<Double_t,std::pair<UInt_t, Int_t> > j) {
-   return (i.first<j.first);
-}
-
 class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
    public:
       explicit MuonAnalysis(const edm::ParameterSet&);
@@ -76,7 +72,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> > genvertexToken_;
       edm::EDGetTokenT<std::vector<reco::GenParticle> > genparticleToken_;
       TTree * tree_;
-      UInt_t nMuon_, nGenPart_;
+      UInt_t nMuon_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_;
       Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100], Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
       Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100], Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
       Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
@@ -85,7 +81,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
       UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
       Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500];
-      Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_;
+      Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_;
 };
 
 //
@@ -169,6 +165,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("GenVertex_y",&GenVertex_y_,"GenVertex_y/F");
     tree_->Branch("GenVertex_z",&GenVertex_z_,"GenVertex_z/F");
     tree_->Branch("nGenPart",&nGenPart_,"nGenPart/i");
+    tree_->Branch("nGenPartPreFSR",&nGenPartPreFSR_,"nGenPartPreFSR/i");
+    tree_->Branch("nGenPart746",&nGenPart746_,"nGenPart746/i");
+    tree_->Branch("nGenMuonPreFSR",&nGenMuonPreFSR_,"nGenMuonPreFSR/i");
     tree_->Branch("GenPart_eta",&GenPart_eta_,"GenPart_eta[nGenPart]/F");
     tree_->Branch("GenPart_mass",&GenPart_mass_,"GenPart_mass[nGenPart]/F");
     tree_->Branch("GenPart_phi",&GenPart_phi_,"GenPart_phi[nGenPart]/F");
@@ -179,6 +178,8 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("GenPart_statusFlags",&GenPart_statusFlags_,"GenPart_statusFlags[nGenPart]/I");
     tree_->Branch("GenPart_preFSRLepIdx1",&GenPart_preFSRLepIdx1_,"GenPart_preFSRLepIdx1/I");
     tree_->Branch("GenPart_preFSRLepIdx2",&GenPart_preFSRLepIdx2_,"GenPart_preFSRLepIdx2/I");
+    tree_->Branch("GenPart_postFSRLepIdx1",&GenPart_postFSRLepIdx1_,"GenPart_postFSRLepIdx1/I");
+    tree_->Branch("GenPart_postFSRLepIdx2",&GenPart_postFSRLepIdx2_,"GenPart_postFSRLepIdx2/I");
     tree_->SetAutoSave(0);
 }
 
@@ -212,7 +213,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
    reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
    ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
-   getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_,nGenPart_);
+   getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_);
    //std::map<Double_t, std::pair<int,int> > distances;
    std::vector<std::pair<Double_t,std::pair<UInt_t, Int_t> > > distances; //slower workaround (std::pair::insert causes problems)
    for (const auto& muon : iEvent.get(muonToken_)) {
