@@ -82,7 +82,6 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     sort(prefsrleptons.begin()+status746.size(),prefsrleptons.end(),genleptoncompare); //then the other final state prefsr particles are added (what it is done here: https://github.com/WMass/nanoAOD-tools/blob/master/python/postprocessing/wmass/genLepSelection.py)
     sort(postfsr.begin(),postfsr.begin()+postfsrmum.size(),genleptoncompare);
     sort(postfsr.begin()+postfsrmum.size(),postfsr.end(),genleptoncompare);
-    for (unsigned int h=0; h!=postfsr.size(); h++) std::cout<<genparticles[postfsr[h].first].pdgId()<<" "<<genparticles[postfsr[h].first].status()<<"\n";
     if (prefsrleptons.size()==0) {
       GenPart_preFSRLepIdx1 = -1;
       GenPart_preFSRLepIdx2 = -1;
@@ -107,5 +106,4 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
       GenPart_postFSRLepIdx1_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[0]).first : (postfsr[1]).first;
       GenPart_postFSRLepIdx2_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[1]).first : (postfsr[0]).first;
     }
-    //if ((prefsrleptons.size()>=2)&&(postfsr.size()>=2)) std::cout<<genparticles[GenPart_preFSRLepIdx1].pdgId()<<" "<<genparticles[GenPart_preFSRLepIdx1].energy()<<" "<<genparticles[GenPart_preFSRLepIdx1].eta()<<"\n"<<genparticles[GenPart_preFSRLepIdx2].pdgId()<<" "<<genparticles[GenPart_preFSRLepIdx2].energy()<<" "<<genparticles[GenPart_preFSRLepIdx2].eta()<<"\n"<<genparticles[GenPart_postFSRLepIdx1_].pdgId()<<" "<<genparticles[GenPart_postFSRLepIdx1_].energy()<<" "<<genparticles[GenPart_postFSRLepIdx1_].eta()<<"\n"<<genparticles[GenPart_postFSRLepIdx2_].pdgId()<<" "<<genparticles[GenPart_postFSRLepIdx2_].energy()<<" "<<genparticles[GenPart_postFSRLepIdx2_].eta()<<"\n";
 }
