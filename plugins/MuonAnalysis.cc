@@ -217,8 +217,6 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
    ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
    getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_);
-   //std::map<Double_t, std::pair<int,int> > distances;
-   std::vector<std::pair<Double_t,std::pair<UInt_t, Int_t> > > distances; //slower workaround (std::pair::insert causes problems)
    for (const auto& muon : iEvent.get(muonToken_)) {
       // do something with track parameters, e.g, plot the charge.
       // int charge = track.charge();
@@ -354,35 +352,27 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Muon_genPartPreFSRIdx_[i]=-1;
       int j=0;
       for (const auto& genparticle : iEvent.get(genparticleToken_)) {
-         if (abs(genparticle.pdgId())==13) {
+         if (abs(genparticle.pdgId())==13)
              if (genparticle.status()==1) 
-                 if (muon.genLepton()==&genparticle) Muon_genPartIdx_[i]=j;
-             if ((j==GenPart_preFSRLepIdx1_)||(j==GenPart_preFSRLepIdx2_)) {
-                 TLorentzVector mu, gp;
-                 mu.SetPtEtaPhiM(muon.pt(),muon.eta(),muon.phi(),muon.mass());
-                 gp.SetPtEtaPhiM(genparticle.pt(),genparticle.eta(),genparticle.phi(),genparticle.mass());
-                 distances.push_back({mu.DeltaR(gp),{i,j}});
+                 if (muon.genLepton()==&genparticle)
+                     Muon_genPartIdx_[i]=j;
+         j++;
+      }
+      if (Muon_genPartIdx_[i]>0) {
+         int pdgid=iEvent.get(genparticleToken_)[Muon_genPartIdx_[i]].pdgId();
+         if (iEvent.get(genparticleToken_)[Muon_genPartIdx_[i]].numberOfMothers()>0) {
+             int mompdgid=iEvent.get(genparticleToken_)[Muon_genPartIdx_[i]].motherRef(0)->pdgId();
+             if ((abs(mompdgid)==23)||(abs(mompdgid)==24)) {
+                 if (pdgid==iEvent.get(genparticleToken_)[GenPart_preFSRLepIdx1_].pdgId())
+                     Muon_genPartPreFSRIdx_[i]=GenPart_preFSRLepIdx1_;
+                 if (pdgid==iEvent.get(genparticleToken_)[GenPart_preFSRLepIdx2_].pdgId())
+                     Muon_genPartPreFSRIdx_[i]=GenPart_preFSRLepIdx2_;
              }
          }
-         j++;
       }
       i++;
    }
-   sort(distances.begin(),distances.end(),distancesort);
    nMuon_=nmuon=i;
-   std::vector<unsigned int> forbiddenindicesmu;
-   std::vector<int> forbiddenindicesgp;
-   for (std::vector<std::pair<Double_t, std::pair<unsigned int,int> > >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
-      if (it->first>0.5) continue; //maxDeltaR<0.5. From here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
-      if (abs(iEvent.get(muonToken_)[it->second.first].pt()-iEvent.get(genparticleToken_)[it->second.second].pt())/iEvent.get(genparticleToken_)[it->second.second].pt()>0.5) continue; //maxdptrel <0.5. from here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
-      if (!(std::find(forbiddenindicesmu.begin(), forbiddenindicesmu.end(), it->second.first) != forbiddenindicesmu.end())) {
-           if (!(std::find(forbiddenindicesgp.begin(), forbiddenindicesgp.end(), it->second.second) != forbiddenindicesgp.end())) {
-               Muon_genPartPreFSRIdx_[it->second.first]=it->second.second; 
-               forbiddenindicesmu.push_back(it->second.first);
-               forbiddenindicesgp.push_back(it->second.second);
-           }
-      }
-   }
    PV_x_=pv_x=primaryvertex.x();
    PV_y_=pv_y=primaryvertex.y();
    PV_z_=pv_z=primaryvertex.z();

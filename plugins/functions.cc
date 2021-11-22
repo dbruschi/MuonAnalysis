@@ -15,27 +15,37 @@ bool distancesort(std::pair<Double_t,std::pair<UInt_t, Int_t> > i, std::pair<Dou
 void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, Int_t& GenPart_postFSRLepIdx1_, Int_t& GenPart_postFSRLepIdx2_, UInt_t& nGenPart_, UInt_t& nGenPartPreFSR_, UInt_t& nGenMuonPreFSR_, UInt_t& nGenPart746_) {
     std::vector<int> status746(0);
     std::vector<int> other(0);
+    std::vector<int> postfsrmum(0);
+    std::vector<int> postfsrother(0);
     unsigned int j=0;
     for (auto const& genparticle : genparticles) {
       GenPart_eta_[j]=genparticle.eta();
       GenPart_mass_[j]=genparticle.mass();
       GenPart_phi_[j]=genparticle.phi();
       GenPart_pt_[j]=genparticle.pt();
-      GenPart_genPartIdxMother_[j]=(genparticle.numberOfMothers()>0) ? genparticle.motherRef(0).key():-1;
+      GenPart_genPartIdxMother_[j]=(genparticle.numberOfMothers()>0) ? genparticle.motherRef(0).key():-1; 
       GenPart_pdgId_[j]=genparticle.pdgId();
       GenPart_status_[j]=genparticle.status();
       GenPart_statusFlags_[j]=(genparticle.statusFlags()).flags_.to_ulong();
       if (genparticle.numberOfMothers()>0) { 
         int mompdgId = genparticle.mother()->pdgId();
         if (abs(genparticle.pdgId()) >= 11 && abs(genparticle.pdgId()) <= 16) {
-          if (abs(mompdgId) == 23 || abs(mompdgId) == 24) {                       //
+          if (abs(mompdgId) == 23 || abs(mompdgId) == 24) {
+            if ((genparticle.status() == 1)||(genparticle.status()==2))
+              if (genparticle.statusFlags().flags_.to_ulong() & 1)
+                postfsrmum.push_back(j);
             if (genparticle.status() == 746) //status 746 is pre photos FSR in new powheg samples. so if they exist we want those.
               status746.push_back(j);
             else 
               other.push_back(j);
           }
-          else if (genparticle.status() == 23) //in madgraph5_aMC@NLO there are some events without a W/Z, those have status 23 leptons (tested on >1M events)
-            other.push_back(j);
+          else {
+            if (genparticle.status() == 23)  //in madgraph5_aMC@NLO there are some events without a W/Z, those have status 23 leptons (tested on >1M events)
+              other.push_back(j);
+            if ((genparticle.status() == 1)||(genparticle.status()==2))
+              if (genparticle.statusFlags().flags_.to_ulong() & 1)
+                postfsrother.push_back(j);
+          }
         }
       }
       j++;
@@ -49,11 +59,18 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
       other = otherTmp;
     }
     std::vector<std::pair<int, float> > prefsrleptons(0);
+    std::vector<std::pair<int, float> > postfsr(0);
     for (unsigned int h=0; h!=status746.size(); h++) {
       prefsrleptons.push_back({status746[h],(genparticles[status746[h]]).pt()});
     }
     for (unsigned int h=0; h!=other.size(); h++) {
       prefsrleptons.push_back({other[h],(genparticles[other[h]]).pt()});
+    }
+    for (unsigned int h=0; h!=postfsrmum.size(); h++) {
+      postfsr.push_back({postfsrmum[h],(genparticles[postfsrmum[h]]).pt()});
+    }
+    for (unsigned int h=0; h!=postfsrother.size(); h++) {
+      postfsr.push_back({postfsrother[h],(genparticles[postfsrother[h]]).pt()});
     }
     nGenPart746_=status746.size();
     nGenPartPreFSR_=prefsrleptons.size();
@@ -63,6 +80,9 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     }
     sort(prefsrleptons.begin(),prefsrleptons.begin()+status746.size(),genleptoncompare); //priority given to status746 particles, therefore they have the first indices
     sort(prefsrleptons.begin()+status746.size(),prefsrleptons.end(),genleptoncompare); //then the other final state prefsr particles are added (what it is done here: https://github.com/WMass/nanoAOD-tools/blob/master/python/postprocessing/wmass/genLepSelection.py)
+    sort(postfsr.begin(),postfsr.begin()+postfsrmum.size(),genleptoncompare);
+    sort(postfsr.begin()+postfsrmum.size(),postfsr.end(),genleptoncompare);
+    for (unsigned int h=0; h!=postfsr.size(); h++) std::cout<<genparticles[postfsr[h].first].pdgId()<<" "<<genparticles[postfsr[h].first].status()<<"\n";
     if (prefsrleptons.size()==0) {
       GenPart_preFSRLepIdx1 = -1;
       GenPart_preFSRLepIdx2 = -1;
@@ -75,38 +95,17 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
       GenPart_preFSRLepIdx1 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[0]).first : (prefsrleptons[1]).first;
       GenPart_preFSRLepIdx2 = (prefsrleptons[0]).second > (prefsrleptons[1]).second ? (prefsrleptons[1]).first : (prefsrleptons[0]).first;
     }
-    std::vector<std::pair<Double_t, std::pair<Int_t,Int_t> > > distances;
-    int h=0;
-    for (auto const& genparticle : genparticles) { //i would like to avoid this concatenated double lopp
-      int j=0;
-      for (auto const& gp2: genparticles) {
-         if (genparticle.status()==1) {
-            if ((j==GenPart_preFSRLepIdx1)||(j==GenPart_preFSRLepIdx2)) {
-               TLorentzVector A, B;
-               A.SetPtEtaPhiM(gp2.pt(),gp2.eta(),gp2.phi(),gp2.mass());
-               B.SetPtEtaPhiM(genparticle.pt(),genparticle.eta(),genparticle.phi(),genparticle.mass());
-               distances.push_back({A.DeltaR(B),{h,j}});
-            }
-         }
-         j++;
-      }
-      h++;
+    if (postfsr.size()==0) {
+      GenPart_postFSRLepIdx1_ = -1;
+      GenPart_postFSRLepIdx2_ = -1;
     }
-    GenPart_postFSRLepIdx1_=-1;
-    GenPart_postFSRLepIdx2_=-1;
-    sort(distances.begin(),distances.end(),distancesort);
-    std::vector<int> forbiddenindicesgp1;
-    std::vector<int> forbiddenindicesgp2;
-    for (std::vector<std::pair<Double_t, std::pair<int,int> > >::const_iterator it=distances.begin(); it!=distances.end(); it++) {
-       if (it->first>0.5) continue; //maxDeltaR<0.5. From here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
-       if (abs(genparticles[it->second.first].pt()-genparticles[it->second.second].pt())/genparticles[it->second.second].pt()>0.5) continue; //maxdptrel <0.5. from here: https://twiki.cern.ch/twiki/bin/view/CMSPublic/SWGuidePATMCMatching
-       if (!(std::find(forbiddenindicesgp1.begin(), forbiddenindicesgp1.end(), it->second.first) != forbiddenindicesgp1.end())) {
-            if (!(std::find(forbiddenindicesgp2.begin(), forbiddenindicesgp2.end(), it->second.second) != forbiddenindicesgp2.end())) {
-                if (GenPart_preFSRLepIdx1==it->second.second) GenPart_postFSRLepIdx1_=it->second.first;
-                if (GenPart_preFSRLepIdx2==it->second.second) GenPart_postFSRLepIdx2_=it->second.first;
-                forbiddenindicesgp1.push_back(it->second.first);
-                forbiddenindicesgp2.push_back(it->second.second);
-            }
-       }
+    else if (postfsr.size()==1) {
+      GenPart_postFSRLepIdx1_ = (postfsr[0]).first;
+      GenPart_postFSRLepIdx2_ = -1;
     }
+    else {
+      GenPart_postFSRLepIdx1_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[0]).first : (postfsr[1]).first;
+      GenPart_postFSRLepIdx2_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[1]).first : (postfsr[0]).first;
+    }
+    //if ((prefsrleptons.size()>=2)&&(postfsr.size()>=2)) std::cout<<genparticles[GenPart_preFSRLepIdx1].pdgId()<<" "<<genparticles[GenPart_preFSRLepIdx1].energy()<<" "<<genparticles[GenPart_preFSRLepIdx1].eta()<<"\n"<<genparticles[GenPart_preFSRLepIdx2].pdgId()<<" "<<genparticles[GenPart_preFSRLepIdx2].energy()<<" "<<genparticles[GenPart_preFSRLepIdx2].eta()<<"\n"<<genparticles[GenPart_postFSRLepIdx1_].pdgId()<<" "<<genparticles[GenPart_postFSRLepIdx1_].energy()<<" "<<genparticles[GenPart_postFSRLepIdx1_].eta()<<"\n"<<genparticles[GenPart_postFSRLepIdx2_].pdgId()<<" "<<genparticles[GenPart_postFSRLepIdx2_].energy()<<" "<<genparticles[GenPart_postFSRLepIdx2_].eta()<<"\n";
 }
