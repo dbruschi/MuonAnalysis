@@ -39,6 +39,9 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticle.h"
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
+#include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "functions.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
@@ -71,6 +74,26 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       edm::EDGetTokenT<reco::BeamSpot> beamspotToken_;
       edm::EDGetTokenT<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> > genvertexToken_;
       edm::EDGetTokenT<std::vector<reco::GenParticle> > genparticleToken_;
+      edm::EDGetTokenT<GenEventInfoProduct> geneventinfoToken_;
+      edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
+      edm::EDGetTokenT< double > prefweightpreVFP_token;
+      edm::EDGetTokenT< double > prefweightpreVFPup_token;
+      edm::EDGetTokenT< double > prefweightpreVFPdown_token;
+      edm::EDGetTokenT< double > prefweightpreVFPECAL_token;
+      edm::EDGetTokenT< double > prefweightpreVFPupECAL_token;
+      edm::EDGetTokenT< double > prefweightpreVFPdownECAL_token;
+      edm::EDGetTokenT< double > prefweightpreVFPMuon_token;
+      edm::EDGetTokenT< double > prefweightpreVFPupMuon_token;
+      edm::EDGetTokenT< double > prefweightpreVFPdownMuon_token;
+      edm::EDGetTokenT< double > prefweightpostVFP_token;
+      edm::EDGetTokenT< double > prefweightpostVFPup_token;
+      edm::EDGetTokenT< double > prefweightpostVFPdown_token;
+      edm::EDGetTokenT< double > prefweightpostVFPECAL_token;
+      edm::EDGetTokenT< double > prefweightpostVFPupECAL_token;
+      edm::EDGetTokenT< double > prefweightpostVFPdownECAL_token;
+      edm::EDGetTokenT< double > prefweightpostVFPMuon_token;
+      edm::EDGetTokenT< double > prefweightpostVFPupMuon_token;
+      edm::EDGetTokenT< double > prefweightpostVFPdownMuon_token;
       TTree * tree_;
       UInt_t nMuon_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
       Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100], Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
@@ -80,8 +103,11 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
       Int_t Muon_charge_[100];
       Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100], Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
       UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
-      Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500];
+      Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500], Generator_weight_, puWeight_, puWeight_Up_, puWeight_Down_, L1PreFiringWeightpreVFP_Nom, L1PreFiringWeightpreVFP_Up, L1PreFiringWeightpreVFP_Dn, L1PreFiringWeightECALpreVFP_Nom, L1PreFiringWeightECALpreVFP_Up, L1PreFiringWeightECALpreVFP_Dn, L1PreFiringWeightMuonpreVFP_Nom, L1PreFiringWeightMuonpreVFP_Up, L1PreFiringWeightMuonpreVFP_Dn, L1PreFiringWeightpostVFP_Nom, L1PreFiringWeightpostVFP_Up, L1PreFiringWeightpostVFP_Dn, L1PreFiringWeightECALpostVFP_Nom, L1PreFiringWeightECALpostVFP_Up, L1PreFiringWeightECALpostVFP_Dn, L1PreFiringWeightMuonpostVFP_Nom, L1PreFiringWeightMuonpostVFP_Up, L1PreFiringWeightMuonpostVFP_Dn;
       Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500];
+      edm::LumiReWeighting* lumiWeights_;
+      edm::LumiReWeighting* lumiWeightsup_;
+      edm::LumiReWeighting* lumiWeightsdown_;
 };
 
 //
@@ -105,6 +131,35 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     beamspotToken_=consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot"));
     genvertexToken_=consumes<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> >(iConfig.getUntrackedParameter<edm::InputTag>("genvertex"));
     genparticleToken_=consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genparticles"));
+    geneventinfoToken_=consumes<GenEventInfoProduct>(iConfig.getUntrackedParameter<edm::InputTag>("geneventinfo"));
+    puToken_=consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("pileupinfo"));
+    prefweightpreVFP_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProb"));
+    prefweightpreVFPup_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbUp"));
+    prefweightpreVFPdown_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbDown"));
+    prefweightpreVFPECAL_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbECAL"));
+    prefweightpreVFPupECAL_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbECALUp"));
+    prefweightpreVFPdownECAL_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbECALDown"));
+    prefweightpreVFPMuon_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbMuon"));
+    prefweightpreVFPupMuon_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbMuonUp"));
+    prefweightpreVFPdownMuon_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbMuonDown"));
+    prefweightpostVFP_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProb"));
+    prefweightpostVFPup_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbUp"));
+    prefweightpostVFPdown_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbDown"));
+    prefweightpostVFPECAL_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbECAL"));
+    prefweightpostVFPupECAL_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbECALUp"));
+    prefweightpostVFPdownECAL_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbECALDown"));
+    prefweightpostVFPMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuon"));
+    prefweightpostVFPupMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonUp"));
+    prefweightpostVFPdownMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonDown"));
+    std::string pumc("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/files/pileup_mc_2016UL.root"); //might need fixing (specific for my config)
+    std::string pudata("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root");
+    std::string pudata_down("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-66000ub-99bins.root");
+    std::string pudata_up("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-72400ub-99bins.root");
+    std::string puhistomc("pileup_mc");
+    std::string puhistodata("pileup");
+    lumiWeights_=new edm::LumiReWeighting(pumc,pudata,puhistomc,puhistodata);
+    lumiWeightsup_=new edm::LumiReWeighting(pumc,pudata_up,puhistomc,puhistodata);
+    lumiWeightsdown_=new edm::LumiReWeighting(pumc,pudata_down,puhistomc,puhistodata);
     edm::Service<TFileService> fs;
     tree_=fs->make<TTree>("Events","Events");
     tree_->Branch("nMuon", &nMuon_, "nMuon/i");
@@ -185,6 +240,28 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
     tree_->Branch("GenPart_postFSRLepIdx1",&GenPart_postFSRLepIdx1_,"GenPart_postFSRLepIdx1/I");
     tree_->Branch("GenPart_postFSRLepIdx2",&GenPart_postFSRLepIdx2_,"GenPart_postFSRLepIdx2/I");
 	tree_->Branch("GenPart_PostFSR", &GenPart_PostFSR_,"GenPart_PostFSR[nGenPartPostFSR]/I");
+    tree_->Branch("Generator_weight",&Generator_weight_,"Generator_weight/F");
+    tree_->Branch("puWeight",&puWeight_,"puWeight/F");
+    tree_->Branch("puWeight_Up",&puWeight_Up_,"puWeight_Up/F");
+    tree_->Branch("puWeight_Down",&puWeight_Down_,"puWeight_Down/F");
+	tree_->Branch("L1PreFiringWeightpreVFP_Nom",&L1PreFiringWeightpreVFP_Nom,"L1PreFiringWeightpreVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightpreVFP_Up",&L1PreFiringWeightpreVFP_Up,"L1PreFiringWeightpreVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightpreVFP_Dn",&L1PreFiringWeightpreVFP_Dn,"L1PreFiringWeightpreVFP_Dn/F");
+	tree_->Branch("L1PreFiringWeightECALpreVFP_Nom",&L1PreFiringWeightECALpreVFP_Nom,"L1PreFiringWeightECALpreVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightECALpreVFP_Up",&L1PreFiringWeightECALpreVFP_Up,"L1PreFiringWeightECALpreVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightECALpreVFP_Dn",&L1PreFiringWeightECALpreVFP_Dn,"L1PreFiringWeightECALpreVFP_Dn/F");
+	tree_->Branch("L1PreFiringWeightMuonpreVFP_Nom",&L1PreFiringWeightMuonpreVFP_Nom,"L1PreFiringWeightMuonpreVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightMuonpreVFP_Up",&L1PreFiringWeightMuonpreVFP_Up,"L1PreFiringWeightMuonpreVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightMuonpreVFP_Dn",&L1PreFiringWeightMuonpreVFP_Dn,"L1PreFiringWeightMuonpreVFP_Dn/F");
+	tree_->Branch("L1PreFiringWeightpostVFP_Nom",&L1PreFiringWeightpostVFP_Nom,"L1PreFiringWeightpostVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightpostVFP_Up",&L1PreFiringWeightpostVFP_Up,"L1PreFiringWeightpostVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightpostVFP_Dn",&L1PreFiringWeightpostVFP_Dn,"L1PreFiringWeightpostVFP_Dn/F");
+	tree_->Branch("L1PreFiringWeightECALpostVFP_Nom",&L1PreFiringWeightECALpostVFP_Nom,"L1PreFiringWeightECALpostVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightECALpostVFP_Up",&L1PreFiringWeightECALpostVFP_Up,"L1PreFiringWeightECALpostVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightECALpostVFP_Dn",&L1PreFiringWeightECALpostVFP_Dn,"L1PreFiringWeightECALpostVFP_Dn/F");
+	tree_->Branch("L1PreFiringWeightMuonpostVFP_Nom",&L1PreFiringWeightMuonpostVFP_Nom,"L1PreFiringWeightMuonpostVFP_Nom/F");
+	tree_->Branch("L1PreFiringWeightMuonpostVFP_Up",&L1PreFiringWeightMuonpostVFP_Up,"L1PreFiringWeightMuonpostVFP_Up/F");
+	tree_->Branch("L1PreFiringWeightMuonpostVFP_Dn",&L1PreFiringWeightMuonpostVFP_Dn,"L1PreFiringWeightMuonpostVFP_Dn/F");
     tree_->SetAutoSave(0);
 }
 
@@ -383,6 +460,36 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    GenVertex_x_=genvertex_x=genvertex.x();
    GenVertex_y_=genvertex_y=genvertex.y();
    GenVertex_z_=genvertex_z=genvertex.z();
+   Generator_weight_=iEvent.get(geneventinfoToken_).weight();
+   float npv = -1;
+   for (std::vector<PileupSummaryInfo>::const_iterator pvi = iEvent.get(puToken_).begin(); pvi != iEvent.get(puToken_).end(); ++pvi) {
+     int bx = pvi->getBunchCrossing();
+     if (bx == 0) {
+       npv = pvi->getTrueNumInteractions();
+       continue;
+     }
+   }
+   puWeight_=lumiWeights_->weight(npv);
+   puWeight_Up_=lumiWeightsup_->weight(npv);
+   puWeight_Down_=lumiWeightsdown_->weight(npv);
+   L1PreFiringWeightpreVFP_Nom=iEvent.get(prefweightpreVFP_token);
+   L1PreFiringWeightpreVFP_Up=iEvent.get(prefweightpreVFPup_token);
+   L1PreFiringWeightpreVFP_Dn=iEvent.get(prefweightpreVFPdown_token);
+   L1PreFiringWeightECALpreVFP_Nom=iEvent.get(prefweightpreVFPECAL_token);
+   L1PreFiringWeightECALpreVFP_Up=iEvent.get(prefweightpreVFPupECAL_token);
+   L1PreFiringWeightECALpreVFP_Dn=iEvent.get(prefweightpreVFPdownECAL_token);
+   L1PreFiringWeightMuonpreVFP_Nom=iEvent.get(prefweightpreVFPMuon_token);
+   L1PreFiringWeightMuonpreVFP_Up=iEvent.get(prefweightpreVFPupMuon_token);
+   L1PreFiringWeightMuonpreVFP_Dn=iEvent.get(prefweightpreVFPdownMuon_token);
+   L1PreFiringWeightpostVFP_Nom=iEvent.get(prefweightpostVFP_token);
+   L1PreFiringWeightpostVFP_Up=iEvent.get(prefweightpostVFPup_token);
+   L1PreFiringWeightpostVFP_Dn=iEvent.get(prefweightpostVFPdown_token);
+   L1PreFiringWeightECALpostVFP_Nom=iEvent.get(prefweightpostVFPECAL_token);
+   L1PreFiringWeightECALpostVFP_Up=iEvent.get(prefweightpostVFPupECAL_token);
+   L1PreFiringWeightECALpostVFP_Dn=iEvent.get(prefweightpostVFPdownECAL_token);
+   L1PreFiringWeightMuonpostVFP_Nom=iEvent.get(prefweightpostVFPMuon_token);
+   L1PreFiringWeightMuonpostVFP_Up=iEvent.get(prefweightpostVFPupMuon_token);
+   L1PreFiringWeightMuonpostVFP_Dn=iEvent.get(prefweightpostVFPdownMuon_token);
    /*std::cout<<nmuon<<"\n";
    std::cout<<"First Primary Vertex x:"<<pv_x<<" y:"<<pv_y<<" z:"<<pv_z<<" normalized chi2:"<<pv_chi2<<" ndof:"<<pv_ndof<<"\n";
    std::cout<<"BeamSpot x0:"<<beamspot_x0<<" y0:"<<beamspot_y0<<" z0:"<<beamspot_z0<<"\n";

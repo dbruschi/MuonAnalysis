@@ -8,4 +8,7 @@
 <use name="PhysicsTools/UtilAlgos"/>
 <use name="FWCore/ServiceRegistry"/>
 <use name="DataFormats/HepMCCandidate"/>
+<use name="SimDataFormats/GeneratorProducts"/>
+<use name="SimDataFormats/PileupSummaryInfo"/>
+<use name="PhysicsTools/Utilities"/>
 <flags EDM_PLUGIN="1"/>
