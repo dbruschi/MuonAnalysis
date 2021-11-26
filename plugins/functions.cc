@@ -12,7 +12,7 @@ bool distancesort(std::pair<Double_t,std::pair<UInt_t, Int_t> > i, std::pair<Dou
 
 //implentation in the NanoAOD files of the GenPart collection and selection of the PreFSR generator leptons
 ////logic for the generator lepton selection included from here: https://github.com/emanca/wproperties-analysis/blob/master/nanotools/src/genLeptonSelector.cpp
-void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, Int_t& GenPart_postFSRLepIdx1_, Int_t& GenPart_postFSRLepIdx2_, UInt_t& nGenPart_, UInt_t& nGenPartPreFSR_, UInt_t& nGenMuonPreFSR_, UInt_t& nGenPart746_) {
+void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, Float_t *GenPart_eta_, Float_t *GenPart_mass_, Float_t *GenPart_phi_, Float_t *GenPart_pt_, Int_t* GenPart_genPartIdxMother_, Int_t *GenPart_pdgId_, Int_t *GenPart_status_, Int_t *GenPart_statusFlags_, Int_t& GenPart_preFSRLepIdx1, Int_t& GenPart_preFSRLepIdx2, Int_t& GenPart_postFSRLepIdx1_, Int_t& GenPart_postFSRLepIdx2_, UInt_t& nGenPart_, UInt_t& nGenPartPreFSR_, UInt_t& nGenMuonPreFSR_, UInt_t& nGenPart746_, UInt_t& nGenPartPostFSR_, Int_t *GenPart_PostFSR) {
     std::vector<int> status746(0);
     std::vector<int> other(0);
     std::vector<int> postfsrmum(0);
@@ -74,6 +74,7 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     }
     nGenPart746_=status746.size();
     nGenPartPreFSR_=prefsrleptons.size();
+    nGenPartPostFSR_=postfsr.size();
     nGenMuonPreFSR_=0;
     for (unsigned int h=0; h!=prefsrleptons.size(); h++) {
       if (abs(genparticles[prefsrleptons[h].first].pdgId())==13) nGenMuonPreFSR_++;
@@ -82,6 +83,14 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
     sort(prefsrleptons.begin()+status746.size(),prefsrleptons.end(),genleptoncompare); //then the other final state prefsr particles are added (what it is done here: https://github.com/WMass/nanoAOD-tools/blob/master/python/postprocessing/wmass/genLepSelection.py)
     sort(postfsr.begin(),postfsr.begin()+postfsrmum.size(),genleptoncompare);
     sort(postfsr.begin()+postfsrmum.size(),postfsr.end(),genleptoncompare);
+    /*if ((nGenPartPreFSR_>2)&&((genparticles[prefsrleptons[0].first]).status()!=746)) for (unsigned int h=0; h!=prefsrleptons.size(); h++) {
+      std::cout<<"PreFSR"<<prefsrleptons.size()<<" "<<prefsrleptons[h].second<<" "<<(genparticles[prefsrleptons[h].first]).eta()<<" "<<(genparticles[prefsrleptons[h].first]).phi()<<" "<<(genparticles[prefsrleptons[h].first]).mass()<<" "<<(genparticles[prefsrleptons[h].first]).status()<<" "<<(genparticles[prefsrleptons[h].first]).pdgId();
+		if ((genparticles[prefsrleptons[h].first]).numberOfMothers()>0) std::cout<<" "<<(genparticles[prefsrleptons[h].first]).motherRef(0)->pdgId();
+		std::cout<<"\n";
+    }*/
+	for (unsigned int h=0; h!=postfsr.size(); h++) {
+		GenPart_PostFSR[h]=postfsr[h].first;
+	}
     if (prefsrleptons.size()==0) {
       GenPart_preFSRLepIdx1 = -1;
       GenPart_preFSRLepIdx2 = -1;
