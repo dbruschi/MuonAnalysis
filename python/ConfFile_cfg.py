@@ -39,7 +39,8 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    genvertex= cms.untracked.InputTag('genParticles','xyz0'),   
    genparticles = cms.untracked.InputTag('prunedGenParticles'),
    geneventinfo = cms.untracked.InputTag('generator'),
-   pileupinfo = cms.untracked.InputTag('slimmedAddPileupInfo')
+   pileupinfo = cms.untracked.InputTag('slimmedAddPileupInfo'),
+   lheinfo  = cms.untracked.InputTag('externalLHEProducer')
                               )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaod.root") )

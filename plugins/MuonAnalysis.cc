@@ -26,6 +26,7 @@
 #include "FWCore/Framework/interface/one/EDAnalyzer.h"
 
 #include "FWCore/Framework/interface/Event.h"
+#include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
@@ -42,6 +43,7 @@
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "functions.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
@@ -102,17 +104,32 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		edm::EDGetTokenT< double > prefweightpostVFPstatdownMuon_token;
 		edm::EDGetTokenT< double > prefweightpostVFPsystupMuon_token;
 		edm::EDGetTokenT< double > prefweightpostVFPsystdownMuon_token;
+		edm::EDGetTokenT<LHEEventProduct> lheinfoToken_;
 		TTree * tree_;
 		UInt_t nMuon_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
-		Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100], Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
-		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100], Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
-		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
-		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100], Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100], Muon_pfIsoLoose_[100], Muon_pfIsoMedium_[100], Muon_pfIsoTight_[100];
+		Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100];
+		Float_t Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
+		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100];
+		Float_t  Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
+		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, BeamSpot_dxdz_, BeamSpot_dydz_, BeamSpot_sigmaZ_;
+		Float_t GenVertex_x_, GenVertex_y_, GenVertex_z_;
+		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100];
+		Bool_t Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100], Muon_pfIsoLoose_[100], Muon_pfIsoMedium_[100], Muon_pfIsoTight_[100];
 		Int_t Muon_charge_[100];
-		Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100], Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
+		Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100];
+		Int_t Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
 		UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
-		Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500], Generator_weight_, puWeight_, puWeight_Up_, puWeight_Down_, L1PreFiringWeightpreVFP_Nom, L1PreFiringWeightpreVFP_Up, L1PreFiringWeightpreVFP_Dn, L1PreFiringWeightECALpreVFP_Nom, L1PreFiringWeightECALpreVFP_Up, L1PreFiringWeightECALpreVFP_Dn, L1PreFiringWeightMuonpreVFP_Nom, L1PreFiringWeightMuonpreVFP_Up, L1PreFiringWeightMuonpreVFP_Dn, L1PreFiringWeightMuonpreVFP_statUp, L1PreFiringWeightMuonpreVFP_statDn, L1PreFiringWeightMuonpreVFP_systUp, L1PreFiringWeightMuonpreVFP_systDn, L1PreFiringWeightpostVFP_Nom, L1PreFiringWeightpostVFP_Up, L1PreFiringWeightpostVFP_Dn, L1PreFiringWeightECALpostVFP_Nom, L1PreFiringWeightECALpostVFP_Up, L1PreFiringWeightECALpostVFP_Dn, L1PreFiringWeightMuonpostVFP_Nom, L1PreFiringWeightMuonpostVFP_Up, L1PreFiringWeightMuonpostVFP_Dn, L1PreFiringWeightMuonpostVFP_statUp, L1PreFiringWeightMuonpostVFP_statDn, L1PreFiringWeightMuonpostVFP_systUp, L1PreFiringWeightMuonpostVFP_systDn;
-		Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500], GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500];
+		Float_t GenPart_eta_[500], GenPart_mass_[500], GenPart_phi_[500], GenPart_pt_[500], Generator_weight_, puWeight_, puWeight_Up_, puWeight_Down_;
+		Float_t L1PreFiringWeightpreVFP_Nom, L1PreFiringWeightpreVFP_Up, L1PreFiringWeightpreVFP_Dn, L1PreFiringWeightECALpreVFP_Nom;
+		Float_t L1PreFiringWeightECALpreVFP_Up, L1PreFiringWeightECALpreVFP_Dn, L1PreFiringWeightMuonpreVFP_Nom, L1PreFiringWeightMuonpreVFP_Up, L1PreFiringWeightMuonpreVFP_Dn;
+		Float_t L1PreFiringWeightMuonpreVFP_statUp, L1PreFiringWeightMuonpreVFP_statDn, L1PreFiringWeightMuonpreVFP_systUp, L1PreFiringWeightMuonpreVFP_systDn;
+		Float_t L1PreFiringWeightpostVFP_Nom, L1PreFiringWeightpostVFP_Up, L1PreFiringWeightpostVFP_Dn, L1PreFiringWeightECALpostVFP_Nom, L1PreFiringWeightECALpostVFP_Up, L1PreFiringWeightECALpostVFP_Dn;
+		Float_t L1PreFiringWeightMuonpostVFP_Nom, L1PreFiringWeightMuonpostVFP_Up, L1PreFiringWeightMuonpostVFP_Dn; 
+		Float_t L1PreFiringWeightMuonpostVFP_statUp, L1PreFiringWeightMuonpostVFP_statDn, L1PreFiringWeightMuonpostVFP_systUp, L1PreFiringWeightMuonpostVFP_systDn;
+		Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500];
+		Int_t GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500];
+		Float_t LHEPdfWeight_[500], LHEScaleWeight_[500];
+		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
 		edm::LumiReWeighting* lumiWeights_;
 		edm::LumiReWeighting* lumiWeightsup_;
 		edm::LumiReWeighting* lumiWeightsdown_;
@@ -141,6 +158,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	genparticleToken_=consumes<std::vector<reco::GenParticle> >(iConfig.getUntrackedParameter<edm::InputTag>("genparticles"));
 	geneventinfoToken_=consumes<GenEventInfoProduct>(iConfig.getUntrackedParameter<edm::InputTag>("geneventinfo"));
 	puToken_=consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("pileupinfo"));
+	lheinfoToken_=consumes<LHEEventProduct>(iConfig.getUntrackedParameter<edm::InputTag>("lheinfo"));
 	prefweightpreVFP_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProb"));
 	prefweightpreVFPup_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbUp"));
 	prefweightpreVFPdown_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbDown"));
@@ -238,6 +256,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("BeamSpot_x0",&BeamSpot_x0_,"BeamSpot_x0/F");
 	tree_->Branch("BeamSpot_y0",&BeamSpot_y0_,"BeamSpot_y0/F");
 	tree_->Branch("BeamSpot_z0",&BeamSpot_z0_,"BeamSpot_z0/F");
+	tree_->Branch("BeamSpot_dxdz",&BeamSpot_dxdz_,"BeamSpot_dxdz/F");
+	tree_->Branch("BeamSpot_dydz",&BeamSpot_dydz_,"BeamSpot_dydz/F");
+	tree_->Branch("BeamSpot_sigmaZ",&BeamSpot_sigmaZ_,"BeamSpot_sigmaZ/F");
 	tree_->Branch("GenVertex_x",&GenVertex_x_,"GenVertex_x/F");
 	tree_->Branch("GenVertex_y",&GenVertex_y_,"GenVertex_y/F");
 	tree_->Branch("GenVertex_z",&GenVertex_z_,"GenVertex_z/F");
@@ -289,6 +310,10 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("L1PreFiringWeightMuonpostVFP_statDn",&L1PreFiringWeightMuonpostVFP_statDn,"L1PreFiringWeightMuonpostVFP_statDn/F");
 	tree_->Branch("L1PreFiringWeightMuonpostVFP_systUp",&L1PreFiringWeightMuonpostVFP_systUp,"L1PreFiringWeightMuonpostVFP_systUp/F");
 	tree_->Branch("L1PreFiringWeightMuonpostVFP_systDn",&L1PreFiringWeightMuonpostVFP_systDn,"L1PreFiringWeightMuonpostVFP_systDn/F");
+	tree_->Branch("nLHEPdfWeight",&nLHEPdfWeight_,"nLHEPdfWeight/i");
+	tree_->Branch("LHEPdfWeight",&LHEPdfWeight_,"LHEPdfWeight[nLHEPdfWeight]/F");
+	tree_->Branch("nLHEScaleWeight",&nLHEScaleWeight_,"nLHEScaleWeight/i");
+	tree_->Branch("LHEScaleWeight",&LHEScaleWeight_,"LHEScaleWeight[nLHEScaleWeight]/F");
 	tree_->SetAutoSave(0);
 }
 
@@ -316,6 +341,22 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
 	ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
 	getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_, GenPart_PostFSR_);
+	std::vector<LHEEventProduct::WGT> weights=iEvent.get(lheinfoToken_).weights();
+	Float_t originalweight=iEvent.get(lheinfoToken_).originalXWGTUP();
+	for (std::vector<LHEEventProduct::WGT>::const_iterator it=weights.begin(); it!=weights.end(); it++) {
+		if (it->id=="1009") LHEScaleWeight_[0]=it->wgt/originalweight;
+		if (it->id=="1007") LHEScaleWeight_[1]=it->wgt/originalweight;
+		if (it->id=="1008") LHEScaleWeight_[2]=it->wgt/originalweight;
+		if (it->id=="1003") LHEScaleWeight_[3]=it->wgt/originalweight;
+		if (it->id=="1001") LHEScaleWeight_[4]=it->wgt/originalweight;
+		if (it->id=="1002") LHEScaleWeight_[5]=it->wgt/originalweight;
+		if (it->id=="1006") LHEScaleWeight_[6]=it->wgt/originalweight;
+		if (it->id=="1004") LHEScaleWeight_[7]=it->wgt/originalweight;
+		if (it->id=="1005") LHEScaleWeight_[8]=it->wgt/originalweight;
+		if ((it-weights.begin()>=18)&&(it-weights.begin()<=120)) LHEPdfWeight_[(it-weights.begin())-18]=it->wgt/originalweight;
+	}
+	nLHEScaleWeight_=9;
+	nLHEPdfWeight_=103;
 	for (const auto& muon : iEvent.get(muonToken_)) {
 		// do something with track parameters, e.g, plot the charge.
 		// int charge = track.charge();
@@ -433,6 +474,9 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	BeamSpot_x0_=beamspot.x0();
 	BeamSpot_y0_=beamspot.y0();
 	BeamSpot_z0_=beamspot.z0();
+	BeamSpot_dxdz_=beamspot.dxdz();
+	BeamSpot_dydz_=beamspot.dydz();
+	BeamSpot_sigmaZ_=beamspot.sigmaZ();
 	GenVertex_x_=genvertex.x();
 	GenVertex_y_=genvertex.y();
 	GenVertex_z_=genvertex.z();
