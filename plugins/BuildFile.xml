@@ -1,3 +1,4 @@
+<use name="FWCore/Common"/>
 <use name="FWCore/Framework"/>
 <use name="FWCore/PluginManager"/>
 <use name="FWCore/ParameterSet"/>
@@ -8,6 +9,7 @@
 <use name="PhysicsTools/UtilAlgos"/>
 <use name="FWCore/ServiceRegistry"/>
 <use name="DataFormats/HepMCCandidate"/>
+<use name="DataFormats/Common"/>
 <use name="SimDataFormats/GeneratorProducts"/>
 <use name="SimDataFormats/PileupSummaryInfo"/>
 <use name="PhysicsTools/Utilities"/>

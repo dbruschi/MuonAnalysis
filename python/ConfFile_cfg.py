@@ -5,7 +5,7 @@ process = cms.Process("Muon")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000000) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
@@ -36,6 +36,7 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    muons    = cms.untracked.InputTag('slimmedMuons'),
    vertices = cms.untracked.InputTag('offlineSlimmedPrimaryVertices'),
    beamspot = cms.untracked.InputTag('offlineBeamSpot'),
+   hlttrig  = cms.untracked.InputTag("TriggerResults","","HLT"),
    genvertex= cms.untracked.InputTag('genParticles','xyz0'),   
    genparticles = cms.untracked.InputTag('prunedGenParticles'),
    geneventinfo = cms.untracked.InputTag('generator'),

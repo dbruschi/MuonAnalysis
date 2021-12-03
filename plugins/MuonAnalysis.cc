@@ -44,6 +44,8 @@
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h"
 #include "PhysicsTools/Utilities/interface/LumiReWeighting.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "FWCore/Common/interface/TriggerNames.h"
+#include "DataFormats/Common/interface/TriggerResults.h"
 #include "functions.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
@@ -78,6 +80,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		edm::EDGetTokenT<std::vector<reco::GenParticle> > genparticleToken_;
 		edm::EDGetTokenT<GenEventInfoProduct> geneventinfoToken_;
 		edm::EDGetTokenT<std::vector<PileupSummaryInfo> > puToken_;
+		edm::EDGetTokenT<edm::TriggerResults> hlttrigToken_;
 		edm::EDGetTokenT< double > prefweightpreVFP_token;
 		edm::EDGetTokenT< double > prefweightpreVFPup_token;
 		edm::EDGetTokenT< double > prefweightpreVFPdown_token;
@@ -112,9 +115,9 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100];
 		Float_t  Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
 		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, BeamSpot_dxdz_, BeamSpot_dydz_, BeamSpot_sigmaZ_;
-		Float_t GenVertex_x_, GenVertex_y_, GenVertex_z_;
+		Float_t BeamSpot_x0Err_, BeamSpot_y0Err_, BeamSpot_z0Err_, BeamSpot_dxdzErr_, BeamSpot_dydzErr_, BeamSpot_sigmaZErr_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
 		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100];
-		Bool_t Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100], Muon_pfIsoLoose_[100], Muon_pfIsoMedium_[100], Muon_pfIsoTight_[100];
+		Bool_t Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100], Muon_pfIsoLoose_[100], Muon_pfIsoMedium_[100], Muon_pfIsoTight_[100], Muon_triggered_[100];
 		Int_t Muon_charge_[100];
 		Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100];
 		Int_t Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
@@ -128,6 +131,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t L1PreFiringWeightMuonpostVFP_statUp, L1PreFiringWeightMuonpostVFP_statDn, L1PreFiringWeightMuonpostVFP_systUp, L1PreFiringWeightMuonpostVFP_systDn;
 		Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500];
 		Int_t GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500];
+		Bool_t HLT_IsoMu24_, HLT_IsoTkMu24_;
 		Float_t LHEPdfWeight_[500], LHEScaleWeight_[500];
 		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
 		edm::LumiReWeighting* lumiWeights_;
@@ -159,6 +163,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	geneventinfoToken_=consumes<GenEventInfoProduct>(iConfig.getUntrackedParameter<edm::InputTag>("geneventinfo"));
 	puToken_=consumes<std::vector<PileupSummaryInfo> >(iConfig.getUntrackedParameter<edm::InputTag>("pileupinfo"));
 	lheinfoToken_=consumes<LHEEventProduct>(iConfig.getUntrackedParameter<edm::InputTag>("lheinfo"));
+	hlttrigToken_=consumes<edm::TriggerResults>(iConfig.getUntrackedParameter<edm::InputTag>("hlttrig"));
 	prefweightpreVFP_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProb"));
 	prefweightpreVFPup_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbUp"));
 	prefweightpreVFPdown_token = consumes< double >(edm::InputTag("prefiringweightpreVFP:nonPrefiringProbDown"));
@@ -247,6 +252,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("Muon_tkIsoId",&Muon_tkIsoId_,"Muon_tkIsoId[nMuon]/b");
 	tree_->Branch("Muon_genPartIdx",&Muon_genPartIdx_,"Muon_genPartIdx[nMuon]/I");
 	tree_->Branch("Muon_genPartPreFSRIdx",&Muon_genPartPreFSRIdx_,"Muon_genPartPreFSRIdx[nMuon]/I");
+	tree_->Branch("Muon_triggered",&Muon_triggered_,"Muon_triggered[nMuon]/O");
 	tree_->Branch("PV_chi2",&PV_chi2_,"PV_chi2/F");
 	tree_->Branch("PV_ndof",&PV_ndof_,"PV_ndof/F"); 
 	tree_->Branch("PV_score",&PV_score_,"PV_score/F");
@@ -254,11 +260,17 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("PV_y",&PV_y_,"PV_y/F");
 	tree_->Branch("PV_z",&PV_z_,"PV_z/F");
 	tree_->Branch("BeamSpot_x0",&BeamSpot_x0_,"BeamSpot_x0/F");
+	tree_->Branch("BeamSpot_x0Err",&BeamSpot_x0Err_,"BeamSpot_x0Err_/F");
 	tree_->Branch("BeamSpot_y0",&BeamSpot_y0_,"BeamSpot_y0/F");
+	tree_->Branch("BeamSpot_y0Err",&BeamSpot_y0Err_,"BeamSpot_y0Err/F");
 	tree_->Branch("BeamSpot_z0",&BeamSpot_z0_,"BeamSpot_z0/F");
+	tree_->Branch("BeamSpot_z0Err",&BeamSpot_z0Err_,"BeamSpot_z0Err/F");
 	tree_->Branch("BeamSpot_dxdz",&BeamSpot_dxdz_,"BeamSpot_dxdz/F");
+	tree_->Branch("BeamSpot_dxdzErr",&BeamSpot_dxdzErr_,"BeamSpot_dxdzErr/F");
 	tree_->Branch("BeamSpot_dydz",&BeamSpot_dydz_,"BeamSpot_dydz/F");
+	tree_->Branch("BeamSpot_dydzErr",&BeamSpot_dydzErr_,"BeamSpot_dydzErr/F");
 	tree_->Branch("BeamSpot_sigmaZ",&BeamSpot_sigmaZ_,"BeamSpot_sigmaZ/F");
+	tree_->Branch("BeamSpot_sigmaZErr",&BeamSpot_sigmaZErr_,"BeamSpot_sigmaZErr/F");
 	tree_->Branch("GenVertex_x",&GenVertex_x_,"GenVertex_x/F");
 	tree_->Branch("GenVertex_y",&GenVertex_y_,"GenVertex_y/F");
 	tree_->Branch("GenVertex_z",&GenVertex_z_,"GenVertex_z/F");
@@ -314,6 +326,8 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("LHEPdfWeight",&LHEPdfWeight_,"LHEPdfWeight[nLHEPdfWeight]/F");
 	tree_->Branch("nLHEScaleWeight",&nLHEScaleWeight_,"nLHEScaleWeight/i");
 	tree_->Branch("LHEScaleWeight",&LHEScaleWeight_,"LHEScaleWeight[nLHEScaleWeight]/F");
+	tree_->Branch("HLT_IsoMu24",&HLT_IsoMu24_,"HLT_IsoMu24/O");
+	tree_->Branch("HLT_IsoTkMu24",&HLT_IsoTkMu24_,"HLT_IsoTkMu24/O");
 	tree_->SetAutoSave(0);
 }
 
@@ -463,6 +477,8 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		Muon_pfIsoLoose_[i]=muon.passed(muon.PFIsoLoose);
 		Muon_pfIsoMedium_[i]=muon.passed(muon.PFIsoMedium);
 		Muon_pfIsoTight_[i]=muon.passed(muon.PFIsoTight);
+		Muon_triggered_[i]=false;
+		if ((muon.triggered("HLT_IsoMu24_v4"))||(muon.triggered("HLT_IsoTkMu24_v4"))) Muon_triggered_[i]=true;
 		i++;
 	}
 	nMuon_=i;
@@ -472,11 +488,17 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	PV_chi2_=primaryvertex.normalizedChi2();
 	PV_ndof_=primaryvertex.ndof();
 	BeamSpot_x0_=beamspot.x0();
+	BeamSpot_x0Err_=beamspot.x0Error();
 	BeamSpot_y0_=beamspot.y0();
+	BeamSpot_y0Err_=beamspot.y0Error();
 	BeamSpot_z0_=beamspot.z0();
+	BeamSpot_z0Err_=beamspot.z0Error();
 	BeamSpot_dxdz_=beamspot.dxdz();
+	BeamSpot_dxdzErr_=beamspot.dxdzError();
 	BeamSpot_dydz_=beamspot.dydz();
+	BeamSpot_dydzErr_=beamspot.dydzError();
 	BeamSpot_sigmaZ_=beamspot.sigmaZ();
+	BeamSpot_sigmaZErr_=beamspot.sigmaZ0Error();
 	GenVertex_x_=genvertex.x();
 	GenVertex_y_=genvertex.y();
 	GenVertex_z_=genvertex.z();
@@ -518,6 +540,12 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	L1PreFiringWeightMuonpostVFP_statDn=iEvent.get(prefweightpostVFPstatdownMuon_token);
 	L1PreFiringWeightMuonpostVFP_systUp=iEvent.get(prefweightpostVFPsystupMuon_token);
 	L1PreFiringWeightMuonpostVFP_systDn=iEvent.get(prefweightpostVFPsystdownMuon_token);
+	const edm::TriggerResults &triggerBits = iEvent.get(hlttrigToken_);
+	const edm::TriggerNames &names = iEvent.triggerNames(triggerBits);
+	HLT_IsoMu24_=false;
+	if (triggerBits.accept(names.triggerIndex(std::string("HLT_IsoMu24_v4"))))  HLT_IsoMu24_=true;
+	HLT_IsoTkMu24_=false;
+	if (triggerBits.accept(names.triggerIndex(std::string("HLT_IsoTkMu24_v4")))) HLT_IsoTkMu24_=true;
 	tree_->Fill();
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
