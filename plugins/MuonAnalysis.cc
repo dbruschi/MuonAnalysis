@@ -203,8 +203,8 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_=fs->make<TTree>("Events","Events");
 	tree_->Branch("nMuon", &nMuon_, "nMuon/i");
 	tree_->Branch("Muon_pt",&Muon_pt_,"Muon_pt[nMuon]/F");
-	tree_->Branch("Muon_eta",&Muon_eta_,"Muon_eta_[nMuon]/F");
-	tree_->Branch("Muon_phi",&Muon_phi_,"Muon_phi_[nMuon]/F");
+	tree_->Branch("Muon_eta",&Muon_eta_,"Muon_eta[nMuon]/F");
+	tree_->Branch("Muon_phi",&Muon_phi_,"Muon_phi[nMuon]/F");
 	tree_->Branch("Muon_mass",&Muon_mass_,"Muon_mass[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso04_all",&Muon_pfRelIso04_all_,"Muon_pfRelIso04_all[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso04_chgPV",&Muon_pfRelIso04_chgPV_,"Muon_pfRelIso04_chgPV[nMuon]/F");
