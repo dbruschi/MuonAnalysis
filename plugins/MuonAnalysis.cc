@@ -46,6 +46,7 @@
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "FWCore/Common/interface/TriggerNames.h"
 #include "DataFormats/Common/interface/TriggerResults.h"
+#include "DataFormats/PatCandidates/interface/MET.h"
 #include "functions.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
@@ -108,6 +109,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		edm::EDGetTokenT< double > prefweightpostVFPsystupMuon_token;
 		edm::EDGetTokenT< double > prefweightpostVFPsystdownMuon_token;
 		edm::EDGetTokenT<LHEEventProduct> lheinfoToken_;
+		edm::EDGetTokenT<std::vector<pat::MET> > metToken_;
 		TTree * tree_;
 		UInt_t nMuon_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
 		Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100];
@@ -134,6 +136,8 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Bool_t HLT_IsoMu24_, HLT_IsoTkMu24_;
 		Float_t LHEPdfWeight_[500], LHEScaleWeight_[500];
 		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
+		Float_t MET_pt_, MET_phi_, MET_JECUp_pt_, MET_JECDown_pt_, MET_JECUp_phi_, MET_JECDown_phi_, MET_JERUp_pt_, MET_JERDown_pt_;
+		Float_t MET_JERUp_phi_, MET_JERDown_phi_, MET_UnclEnUp_pt_, MET_UnclEnDown_pt_, MET_UnclEnUp_phi_, MET_UnclEnDown_phi_;
 		edm::LumiReWeighting* lumiWeights_;
 		edm::LumiReWeighting* lumiWeightsup_;
 		edm::LumiReWeighting* lumiWeightsdown_;
@@ -190,6 +194,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	prefweightpostVFPsystdownMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonSystDown"));
 	prefweightpostVFPstatupMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonStatUp"));
 	prefweightpostVFPstatdownMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonStatDown"));
+	metToken_ = consumes< std::vector<pat::MET> >(edm::InputTag("slimmedMETs"));
 	std::string pumc("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/files/pileup_mc_2016UL.root"); //might need fixing (specific for my config)
 	std::string pudata("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root");
 	std::string pudata_down("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-66000ub-99bins.root");
@@ -328,6 +333,20 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("LHEScaleWeight",&LHEScaleWeight_,"LHEScaleWeight[nLHEScaleWeight]/F");
 	tree_->Branch("HLT_IsoMu24",&HLT_IsoMu24_,"HLT_IsoMu24/O");
 	tree_->Branch("HLT_IsoTkMu24",&HLT_IsoTkMu24_,"HLT_IsoTkMu24/O");
+	tree_->Branch("MET_pt",&MET_pt_,"MET_pt/F");
+	tree_->Branch("MET_phi",&MET_phi_,"MET_phi/F");
+	tree_->Branch("MET_JECUp_pt",&MET_JECUp_pt_,"MET_JECUp_pt/F");
+	tree_->Branch("MET_JECDown_pt",&MET_JECDown_pt_,"MET_JECDown_pt/F");
+	tree_->Branch("MET_JECUp_phi",&MET_JECUp_phi_,"MET_JECUp_phi/F");
+	tree_->Branch("MET_JECDown_phi",&MET_JECDown_phi_,"MET_JECDown_phi/F");
+	tree_->Branch("MET_JERUp_pt",&MET_JERUp_pt_,"MET_JERUp_pt/F");
+	tree_->Branch("MET_JERDown_pt",&MET_JERDown_pt_,"MET_JERDown_pt/F");
+	tree_->Branch("MET_JERUp_phi",&MET_JERUp_phi_,"MET_JERUp_phi/F");
+	tree_->Branch("MET_JERDown_phi",&MET_JERDown_phi_,"MET_JERDown_phi/F");
+	tree_->Branch("MET_UnclEnUp_pt",&MET_UnclEnUp_pt_,"MET_UnclEnUp_pt/F");
+	tree_->Branch("MET_UnclEnDown_pt",&MET_UnclEnDown_pt_,"MET_UnclEnDown_pt/F");
+	tree_->Branch("MET_UnclEnUp_phi",&MET_UnclEnUp_phi_,"MET_UnclEnUp_phi/F");
+	tree_->Branch("MET_UnclEnDown_phi",&MET_UnclEnDown_phi_,"MET_UnclEnDown_phi/F");
 	tree_->SetAutoSave(0);
 }
 
@@ -546,6 +565,21 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if (triggerBits.accept(names.triggerIndex(std::string("HLT_IsoMu24_v4"))))  HLT_IsoMu24_=true;
 	HLT_IsoTkMu24_=false;
 	if (triggerBits.accept(names.triggerIndex(std::string("HLT_IsoTkMu24_v4")))) HLT_IsoTkMu24_=true;
+	std::vector<pat::MET> mets=iEvent.get(metToken_);
+	MET_pt_=mets[0].corPt();
+	MET_phi_=mets[0].corPhi();
+	MET_JECUp_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::JetEnUp);
+	MET_JECDown_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::JetEnDown);
+	MET_JECUp_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::JetEnUp);
+	MET_JECDown_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::JetEnDown);
+	MET_JERUp_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::JetResUp);
+	MET_JERDown_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::JetResDown);
+	MET_JERUp_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::JetResUp);
+	MET_JERDown_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::JetResDown);
+	MET_UnclEnUp_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::UnclusteredEnUp);
+        MET_UnclEnDown_pt_=mets[0].shiftedPt(pat::MET::METUncertainty::UnclusteredEnDown);
+	MET_UnclEnUp_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::UnclusteredEnUp);
+	MET_UnclEnDown_phi_=mets[0].shiftedPhi(pat::MET::METUncertainty::UnclusteredEnDown);
 	tree_->Fill();
 
 #ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
