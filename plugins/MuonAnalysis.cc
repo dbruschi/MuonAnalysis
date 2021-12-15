@@ -116,6 +116,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
 		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100];
 		Float_t  Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
+		Float_t Muon_closestVtx_X_[100], Muon_closestVtx_Y_[100], Muon_closestVtx_Z_[100];
 		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, BeamSpot_dxdz_, BeamSpot_dydz_, BeamSpot_sigmaZ_;
 		Float_t BeamSpot_x0Err_, BeamSpot_y0Err_, BeamSpot_z0Err_, BeamSpot_dxdzErr_, BeamSpot_dydzErr_, BeamSpot_sigmaZErr_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
 		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100];
@@ -138,6 +139,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
 		Float_t MET_pt_, MET_phi_, MET_JECUp_pt_, MET_JECDown_pt_, MET_JECUp_phi_, MET_JECDown_phi_, MET_JERUp_pt_, MET_JERDown_pt_;
 		Float_t MET_JERUp_phi_, MET_JERDown_phi_, MET_UnclEnUp_pt_, MET_UnclEnDown_pt_, MET_UnclEnUp_phi_, MET_UnclEnDown_phi_;
+		Float_t Pileup_nTrueInt_;
 		edm::LumiReWeighting* lumiWeights_;
 		edm::LumiReWeighting* lumiWeightsup_;
 		edm::LumiReWeighting* lumiWeightsdown_;
@@ -258,6 +260,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("Muon_genPartIdx",&Muon_genPartIdx_,"Muon_genPartIdx[nMuon]/I");
 	tree_->Branch("Muon_genPartPreFSRIdx",&Muon_genPartPreFSRIdx_,"Muon_genPartPreFSRIdx[nMuon]/I");
 	tree_->Branch("Muon_triggered",&Muon_triggered_,"Muon_triggered[nMuon]/O");
+	tree_->Branch("Muon_closestVtx_X",&Muon_closestVtx_X_,"Muon_closestVtx_X[nMuon]/F");
+	tree_->Branch("Muon_closestVtx_Y",&Muon_closestVtx_Y_,"Muon_closestVtx_Y[nMuon]/F");
+	tree_->Branch("Muon_closestVtx_Z",&Muon_closestVtx_Z_,"Muon_closestVtx_Z[nMuon]/F");
 	tree_->Branch("PV_chi2",&PV_chi2_,"PV_chi2/F");
 	tree_->Branch("PV_ndof",&PV_ndof_,"PV_ndof/F"); 
 	tree_->Branch("PV_score",&PV_score_,"PV_score/F");
@@ -298,6 +303,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("GenPart_postFSRLepIdx2",&GenPart_postFSRLepIdx2_,"GenPart_postFSRLepIdx2/I");
 	tree_->Branch("GenPart_PostFSR", &GenPart_PostFSR_,"GenPart_PostFSR[nGenPartPostFSR]/I");
 	tree_->Branch("Generator_weight",&Generator_weight_,"Generator_weight/F");
+	tree_->Branch("Pileup_nTrueInt",&Pileup_nTrueInt_,"Pileup_nTrueInt/F");
 	tree_->Branch("puWeight",&puWeight_,"puWeight/F");
 	tree_->Branch("puWeight_Up",&puWeight_Up_,"puWeight_Up/F");
 	tree_->Branch("puWeight_Down",&puWeight_Down_,"puWeight_Down/F");
@@ -498,6 +504,15 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		Muon_pfIsoTight_[i]=muon.passed(muon.PFIsoTight);
 		Muon_triggered_[i]=false;
 		if ((muon.triggered("HLT_IsoMu24_v4"))||(muon.triggered("HLT_IsoTkMu24_v4"))) Muon_triggered_[i]=true;
+		reco::Vertex muonvtx=primaryvertex;
+		for (const auto vtx : iEvent.get(vertexToken_)) {
+			if (abs(muon.muonBestTrack()->dz(vtx.position()))<abs(muon.muonBestTrack()->dz(muonvtx.position()))) {
+				muonvtx=vtx;
+			}
+		}
+		Muon_closestVtx_X_[i]=muonvtx.x();
+		Muon_closestVtx_Y_[i]=muonvtx.y();
+		Muon_closestVtx_Z_[i]=muonvtx.z();
 		i++;
 	}
 	nMuon_=i;
@@ -530,6 +545,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		continue;
 		}
 	}
+	Pileup_nTrueInt_=npv;
 	puWeight_=lumiWeights_->weight(npv);
 	puWeight_Up_=lumiWeightsup_->weight(npv);
 	puWeight_Down_=lumiWeightsdown_->weight(npv);
