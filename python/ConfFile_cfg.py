@@ -1,12 +1,13 @@
 import FWCore.ParameterSet.Config as cms
 from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
+import os
 
 process = cms.Process("Muon")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(50000) )
 
 process.source = cms.Source("PoolSource",
                                 # replace 'myfile.root' with the source file you want to use
@@ -111,6 +112,8 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    geneventinfo = cms.untracked.InputTag('generator'),
    pileupinfo = cms.untracked.InputTag('slimmedAddPileupInfo'),
    lheinfo  = cms.untracked.InputTag('externalLHEProducer'),
+   slimmedmet = cms.untracked.InputTag('slimmedMETs'),
+   datatier = cms.untracked.string('MINIAOD')
                               )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaod.root") )

@@ -20,6 +20,8 @@
 // system include files
 #include <memory>
 #include <algorithm>
+#include <iostream>
+#include <stdexcept>
 
 // user include files
 #include "FWCore/Framework/interface/Frameworkfwd.h"
@@ -48,6 +50,7 @@
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
 #include "functions.h"
+#include "TSystem.h"
 #include "TTree.h"
 #include "TLorentzVector.h"
 
@@ -110,13 +113,19 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		edm::EDGetTokenT< double > prefweightpostVFPsystdownMuon_token;
 		edm::EDGetTokenT<LHEEventProduct> lheinfoToken_;
 		edm::EDGetTokenT<std::vector<pat::MET> > metToken_;
+		edm::EDGetTokenT<std::vector<reco::Track> > trackToken_;
+		bool isAOD_;
 		TTree * tree_;
-		UInt_t nMuon_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
+		UInt_t nMuon_, nTrack_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
 		Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100];
+		Float_t Muon_standpt_[100], Muon_standeta_[100], Muon_standphi_[100];
 		Float_t Muon_pfRelIso04_nhad_[100], Muon_pfRelIso04_pho_[100], Muon_pfRelIso03_all_[100];
 		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100];
 		Float_t  Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
 		Float_t Muon_closestVtx_X_[100], Muon_closestVtx_Y_[100], Muon_closestVtx_Z_[100];
+		Float_t Track_pt_[100], Track_eta_[100], Track_phi_[100], Track_algo_[100], Track_originalAlgo_[100], Track_chi2_[100], Track_ndof_[100], Track_charge_[100];
+		Float_t Track_dxy_[100], Track_dxyErr_[100], Track_dz_[100], Track_dzErr_[100], Track_dxyBS_[100], Track_dzBS_[100];
+		Float_t Track_closestVtx_X_[100], Track_closestVtx_Y_[100], Track_closestVtx_Z_[100];
 		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, BeamSpot_dxdz_, BeamSpot_dydz_, BeamSpot_sigmaZ_;
 		Float_t BeamSpot_x0Err_, BeamSpot_y0Err_, BeamSpot_z0Err_, BeamSpot_dxdzErr_, BeamSpot_dydzErr_, BeamSpot_sigmaZErr_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
 		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100];
@@ -162,6 +171,17 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 
 {
 	//now do what ever initialization is needed
+	if (iConfig.getUntrackedParameter<std::string>("datatier")=="AOD") {
+		isAOD_=true;
+		std::cout<<"Running analyzer on AOD. Check this is correct\n";
+	}
+	else if (iConfig.getUntrackedParameter<std::string>("datatier")=="MINIAOD") {
+		isAOD_=false;
+		std::cout<<"Running analyzer on MINIAOD. Check this is correct\n";
+	}
+	else {
+		throw std::runtime_error("'datatier' can only be 'MINIAOD' or 'AOD'!");
+	}
 	vertexToken_=consumes<std::vector<reco::Vertex> >(iConfig.getUntrackedParameter<edm::InputTag>("vertices"));
 	beamspotToken_=consumes<reco::BeamSpot>(iConfig.getUntrackedParameter<edm::InputTag>("beamspot"));
 	genvertexToken_=consumes<ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> >(iConfig.getUntrackedParameter<edm::InputTag>("genvertex"));
@@ -197,10 +217,23 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	prefweightpostVFPstatupMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonStatUp"));
 	prefweightpostVFPstatdownMuon_token = consumes< double >(edm::InputTag("prefiringweightpostVFP:nonPrefiringProbMuonStatDown"));
 	metToken_ = consumes< std::vector<pat::MET> >(edm::InputTag("slimmedMETs"));
+	trackToken_ = consumes<std::vector<reco::Track> >(edm::InputTag("generalTracks"));
 	std::string pumc("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/files/pileup_mc_2016UL.root"); //might need fixing (specific for my config)
+	if(gSystem->AccessPathName(gSystem->ExpandPathName(pumc.c_str()))) {
+		pumc=std::string("$CMSSW_BASE/pileup_mc_2016UL.root"); //otherwise doesn't work during crab submission due to how files are included
+	}
 	std::string pudata("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root");
+	if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata.c_str()))) {
+		pudata=std::string("$CMSSW_BASE/PileupHistogram-goldenJSON-13tev-2016-69200ub-99bins.root"); //file above copied in files/ directory (file above doesn't exist when submitting with crab)
+	}
 	std::string pudata_down("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-66000ub-99bins.root");
+        if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_down.c_str()))) {
+                pudata_down=std::string("$CMSSW_BASE/PileupHistogram-goldenJSON-13tev-2016-66000ub-99bins.root");
+        }
 	std::string pudata_up("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-72400ub-99bins.root");
+        if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_up.c_str()))) {
+                pudata_up=std::string("$CMSSW_BASE/PileupHistogram-goldenJSON-13tev-2016-72400ub-99bins.root");
+        }
 	std::string puhistomc("pileup_mc");
 	std::string puhistodata("pileup");
 	lumiWeights_=new edm::LumiReWeighting(pumc,pudata,puhistomc,puhistodata);
@@ -213,6 +246,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("Muon_eta",&Muon_eta_,"Muon_eta[nMuon]/F");
 	tree_->Branch("Muon_phi",&Muon_phi_,"Muon_phi[nMuon]/F");
 	tree_->Branch("Muon_mass",&Muon_mass_,"Muon_mass[nMuon]/F");
+	tree_->Branch("Muon_standpt",&Muon_standpt_,"Muon_standpt[nMuon]/F");
+	tree_->Branch("Muon_standeta",&Muon_standeta_,"Muon_standeta[nMuon]/F");
+	tree_->Branch("Muon_standphi",&Muon_standphi_,"Muon_standphi[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso04_all",&Muon_pfRelIso04_all_,"Muon_pfRelIso04_all[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso04_chgPV",&Muon_pfRelIso04_chgPV_,"Muon_pfRelIso04_chgPV[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso04_chgPU",&Muon_pfRelIso04_chgPU_,"Muon_pfRelIso04_chgPU[nMuon]/F");
@@ -269,6 +305,26 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("PV_x",&PV_x_,"PV_x/F");
 	tree_->Branch("PV_y",&PV_y_,"PV_y/F");
 	tree_->Branch("PV_z",&PV_z_,"PV_z/F");
+	if (isAOD_) {
+		tree_->Branch("nTrack",&nTrack_,"nTrack/i");
+		tree_->Branch("Track_pt",&Track_pt_,"Track_pt[nTrack]/F");
+		tree_->Branch("Track_eta",&Track_eta_,"Track_eta[nTrack]/F");
+		tree_->Branch("Track_phi",&Track_phi_,"Track_phi[nTrack]/F");
+		tree_->Branch("Track_algo",&Track_algo_,"Track_algo[nTrack]/F");
+		tree_->Branch("Track_originalAlgo",&Track_originalAlgo_,"Track_originalAlgo[nTrack]/F");
+		tree_->Branch("Track_chi2",&Track_chi2_,"Track_chi2[nTrack]/F");
+		tree_->Branch("Track_ndof",&Track_ndof_,"Track_ndof[nTrack]/F");
+		tree_->Branch("Track_charge",&Track_charge_,"Track_charge[nTrack]/F");
+		tree_->Branch("Track_dxy",&Track_dxy_,"Track_dxy[nTrack]/F");
+		tree_->Branch("Track_dxyErr",&Track_dxyErr_,"Track_dxyErr[nTrack]/F");
+		tree_->Branch("Track_dz",&Track_dz_,"Track_dz[nTrack]/F");
+		tree_->Branch("Track_dzErr",&Track_dzErr_,"Track_dzErr[nTrack]/F");
+		tree_->Branch("Track_dxyBS",&Track_dxyBS_,"Track_dxyBS[nTrack]/F");
+		tree_->Branch("Track_dzBS",&Track_dzBS_,"Track_dzBS[nTrack]/F");
+		tree_->Branch("Track_closestVtx_X",&Track_closestVtx_X_,"Track_closestVtx_X[nTrack]/F");
+		tree_->Branch("Track_closestVtx_Y",&Track_closestVtx_Y_,"Track_closestVtx_Y[nTrack]/F");
+		tree_->Branch("Track_closestVtx_Z",&Track_closestVtx_Z_,"Track_closestVtx_Z[nTrack]/F");
+	}
 	tree_->Branch("BeamSpot_x0",&BeamSpot_x0_,"BeamSpot_x0/F");
 	tree_->Branch("BeamSpot_x0Err",&BeamSpot_x0Err_,"BeamSpot_x0Err_/F");
 	tree_->Branch("BeamSpot_y0",&BeamSpot_y0_,"BeamSpot_y0/F");
@@ -403,6 +459,9 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		Muon_eta_[i]=muon.eta();
 		Muon_phi_[i]=muon.phi();
 		Muon_mass_[i]=muon.mass();
+		Muon_standpt_[i]=muon.standAloneMuon().isNonnull() ? muon.standAloneMuon()->pt() : -1;
+		Muon_standeta_[i]=muon.standAloneMuon().isNonnull() ? muon.standAloneMuon()->eta() : -99;
+		Muon_standphi_[i]=muon.standAloneMuon().isNonnull() ? muon.standAloneMuon()->phi() : -99;
 		Muon_pfRelIso04_chgPV_[i]=muon.pfIsolationR04().sumChargedHadronPt/Muon_pt_[i];
 		Muon_pfRelIso04_nhad_[i]=muon.pfIsolationR04().sumNeutralHadronEt/Muon_pt_[i]; 
 		Muon_pfRelIso04_pho_[i]=muon.pfIsolationR04().sumPhotonEt/Muon_pt_[i];
@@ -516,6 +575,37 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		i++;
 	}
 	nMuon_=i;
+	i=0;
+	if (isAOD_) {
+		for (const auto& track : iEvent.get(trackToken_)) {
+			if (track.pt()<15) continue;
+			Track_pt_[i]=track.pt();
+			Track_eta_[i]=track.eta();
+			Track_phi_[i]=track.phi();
+			Track_algo_[i]=track.algo();
+			Track_originalAlgo_[i]=track.originalAlgo();
+			Track_chi2_[i]=track.normalizedChi2();
+			Track_ndof_[i]=track.ndof();
+			Track_charge_[i]=track.charge();
+			Track_dxy_[i]=track.dxy(primaryvertex.position());
+			Track_dxyErr_[i]=track.dxyError(primaryvertex.position(),primaryvertex.covariance());
+			Track_dz_[i]=track.dz(primaryvertex.position());
+			Track_dzErr_[i]=track.dzError();
+			Track_dxyBS_[i]=track.dxy(beamspot.position());
+			Track_dzBS_[i]=track.dz(beamspot.position());
+			reco::Vertex trackvtx=primaryvertex;
+			for (const auto vtx : iEvent.get(vertexToken_)) {
+				if (abs(track.dz(vtx.position()))<abs(track.dz(trackvtx.position()))) {
+					trackvtx=vtx;
+				}
+			}
+			Track_closestVtx_X_[i]=trackvtx.x();
+			Track_closestVtx_Y_[i]=trackvtx.y();
+			Track_closestVtx_Z_[i]=trackvtx.z();
+			i++;
+		}
+	}
+	nTrack_=i;
 	PV_x_=primaryvertex.x();
 	PV_y_=primaryvertex.y();
 	PV_z_=primaryvertex.z();
