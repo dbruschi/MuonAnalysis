@@ -141,8 +141,8 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t L1PreFiringWeightpostVFP_Nom, L1PreFiringWeightpostVFP_Up, L1PreFiringWeightpostVFP_Dn, L1PreFiringWeightECALpostVFP_Nom, L1PreFiringWeightECALpostVFP_Up, L1PreFiringWeightECALpostVFP_Dn;
 		Float_t L1PreFiringWeightMuonpostVFP_Nom, L1PreFiringWeightMuonpostVFP_Up, L1PreFiringWeightMuonpostVFP_Dn; 
 		Float_t L1PreFiringWeightMuonpostVFP_statUp, L1PreFiringWeightMuonpostVFP_statDn, L1PreFiringWeightMuonpostVFP_systUp, L1PreFiringWeightMuonpostVFP_systDn;
-		Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500];
-		Int_t GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500];
+		Int_t GenPart_genPartIdxMother_[500], GenPart_pdgId_[500], GenPart_motherPdgId_[500], GenPart_status_[500], GenPart_statusFlags_[500];
+		Int_t GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500], GenPart_origIdx_[500];
 		Bool_t HLT_IsoMu24_, HLT_IsoTkMu24_;
 		Float_t LHEPdfWeight_[500], LHEScaleWeight_[500];
 		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
@@ -259,7 +259,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("Muon_pfRelIso03_chgPU",&Muon_pfRelIso03_chgPU_,"Muon_pfRelIso03_chgPU[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso03_nhad",&Muon_pfRelIso03_nhad_,"Muon_pfRelIso03_nhad[nMuon]/F");
 	tree_->Branch("Muon_pfRelIso03_pho",&Muon_pfRelIso03_pho_,"Muon_pfRelIso03_pho[nMuon]/F");
-	tree_->Branch("Muon_tkRelIso",&Muon_tkRelIso_,"Muon_tkRelIso[nMuon]/F");
+	//tree_->Branch("Muon_tkRelIso",&Muon_tkRelIso_,"Muon_tkRelIso[nMuon]/F");
 	tree_->Branch("Muon_dxy",&Muon_dxy_,"Muon_dxy[nMuon]/F");
 	tree_->Branch("Muon_dxyErr",&Muon_dxyErr_,"Muon_dxyErr[nMuon]/F");
 	tree_->Branch("Muon_dz",&Muon_dz_,"Muon_dz[nMuon]/F");
@@ -273,26 +273,26 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("Muon_mediumId",&Muon_mediumId_,"Muon_mediumId[nMuon]/O");
 	tree_->Branch("Muon_mediumPromptId",&Muon_mediumPromptId_,"Muon_mediumPromptId[nMuon]/O");
 	tree_->Branch("Muon_tightId",&Muon_tightId_,"Muon_tightId[nMuon]/O");
-	tree_->Branch("Muon_softId",&Muon_softId_,"Muon_softId[nMuon]/O");
+	//tree_->Branch("Muon_softId",&Muon_softId_,"Muon_softId[nMuon]/O");
 	tree_->Branch("Muon_isPF",&Muon_isPF_,"Muon_isPF[nMuon]/O");
-	tree_->Branch("Muon_softMvaId",&Muon_softMvaId_,"Muon_softMvaId[nMuon]/O");
+	//tree_->Branch("Muon_softMvaId",&Muon_softMvaId_,"Muon_softMvaId[nMuon]/O");
 	tree_->Branch("Muon_charge",&Muon_charge_,"Muon_charge[nMuon]/I");
-	tree_->Branch("Muon_BestTrackAlgo",&Muon_BestTrackAlgo_,"Muon_BestTrackAlgo[nMuon]/I");
-	tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");
-	tree_->Branch("Muon_GlobalTrackAlgo",&Muon_GlobalTrackAlgo_,"Muon_GlobalTrackAlgo[nMuon]/I");
+	//tree_->Branch("Muon_BestTrackAlgo",&Muon_BestTrackAlgo_,"Muon_BestTrackAlgo[nMuon]/I");
+	//tree_->Branch("Muon_InnerTrackAlgo",&Muon_InnerTrackAlgo_,"Muon_InnerTrackAlgo[nMuon]/I");
+	//tree_->Branch("Muon_GlobalTrackAlgo",&Muon_GlobalTrackAlgo_,"Muon_GlobalTrackAlgo[nMuon]/I");
 	tree_->Branch("Muon_BestTrackOriginalAlgo",&Muon_BestTrackOriginalAlgo_,"Muon_BestTrackOriginalAlgo[nMuon]/I");
 	tree_->Branch("Muon_InnerTrackOriginalAlgo",&Muon_InnerTrackOriginalAlgo_,"Muon_InnerTrackOriginalAlgo[nMuon]/I");
 	tree_->Branch("Muon_GlobalTrackOriginalAlgo",&Muon_GlobalTrackOriginalAlgo_,"Muon_GlobalTrackOriginalAlgo[nMuon]/I");
-	tree_->Branch("Muon_highPtId",&Muon_highPtId_,"Muon_highPtId[nMuon]/b");
-	tree_->Branch("Muon_miniIsoId",&Muon_miniIsoId_,"Muon_miniIsoId[nMuon]/b");
-	tree_->Branch("Muon_multiIsoId",&Muon_multiIsoId_,"Muon_multiIsoId[nMuon]/b");
-	tree_->Branch("Muon_mvaId",&Muon_mvaId_,"Muon_mvaId[nMuon]/b");
-	tree_->Branch("Muon_mvaLowPtId",&Muon_mvaLowPtId_,"Muon_mvaLowPtId[nMuon]/b");
-	tree_->Branch("Muon_pfIsoId",&Muon_pfIsoId_,"Muon_pfIsoId[nMuon]/b");
-	tree_->Branch("Muon_pfIsoLoose",&Muon_pfIsoLoose_,"Muon_pfIsoLoose[nMuon]/O");
-	tree_->Branch("Muon_pfIsoMedium",&Muon_pfIsoMedium_,"Muon_pfIsoMedium[nMuon]/O");
-	tree_->Branch("Muon_pfIsoTight",&Muon_pfIsoTight_,"Muon_pfIsoTight[nMuon]/O");
-	tree_->Branch("Muon_tkIsoId",&Muon_tkIsoId_,"Muon_tkIsoId[nMuon]/b");
+	//tree_->Branch("Muon_highPtId",&Muon_highPtId_,"Muon_highPtId[nMuon]/b");
+	//tree_->Branch("Muon_miniIsoId",&Muon_miniIsoId_,"Muon_miniIsoId[nMuon]/b");
+	//tree_->Branch("Muon_multiIsoId",&Muon_multiIsoId_,"Muon_multiIsoId[nMuon]/b");
+	//tree_->Branch("Muon_mvaId",&Muon_mvaId_,"Muon_mvaId[nMuon]/b");
+	//tree_->Branch("Muon_mvaLowPtId",&Muon_mvaLowPtId_,"Muon_mvaLowPtId[nMuon]/b");
+	//tree_->Branch("Muon_pfIsoId",&Muon_pfIsoId_,"Muon_pfIsoId[nMuon]/b");
+	//tree_->Branch("Muon_pfIsoLoose",&Muon_pfIsoLoose_,"Muon_pfIsoLoose[nMuon]/O");
+	//tree_->Branch("Muon_pfIsoMedium",&Muon_pfIsoMedium_,"Muon_pfIsoMedium[nMuon]/O");
+	//tree_->Branch("Muon_pfIsoTight",&Muon_pfIsoTight_,"Muon_pfIsoTight[nMuon]/O");
+	//tree_->Branch("Muon_tkIsoId",&Muon_tkIsoId_,"Muon_tkIsoId[nMuon]/b");
 	tree_->Branch("Muon_genPartIdx",&Muon_genPartIdx_,"Muon_genPartIdx[nMuon]/I");
 	tree_->Branch("Muon_genPartPreFSRIdx",&Muon_genPartPreFSRIdx_,"Muon_genPartPreFSRIdx[nMuon]/I");
 	tree_->Branch("Muon_triggered",&Muon_triggered_,"Muon_triggered[nMuon]/O");
@@ -310,7 +310,7 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 		tree_->Branch("Track_pt",&Track_pt_,"Track_pt[nTrack]/F");
 		tree_->Branch("Track_eta",&Track_eta_,"Track_eta[nTrack]/F");
 		tree_->Branch("Track_phi",&Track_phi_,"Track_phi[nTrack]/F");
-		tree_->Branch("Track_algo",&Track_algo_,"Track_algo[nTrack]/F");
+	//	tree_->Branch("Track_algo",&Track_algo_,"Track_algo[nTrack]/F");
 		tree_->Branch("Track_originalAlgo",&Track_originalAlgo_,"Track_originalAlgo[nTrack]/F");
 		tree_->Branch("Track_chi2",&Track_chi2_,"Track_chi2[nTrack]/F");
 		tree_->Branch("Track_ndof",&Track_ndof_,"Track_ndof[nTrack]/F");
@@ -341,14 +341,15 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("GenVertex_y",&GenVertex_y_,"GenVertex_y/F");
 	tree_->Branch("GenVertex_z",&GenVertex_z_,"GenVertex_z/F");
 	tree_->Branch("nGenPart",&nGenPart_,"nGenPart/i");
-	tree_->Branch("nGenPartPreFSR",&nGenPartPreFSR_,"nGenPartPreFSR/i");
-	tree_->Branch("nGenPart746",&nGenPart746_,"nGenPart746/i");
-	tree_->Branch("nGenMuonPreFSR",&nGenMuonPreFSR_,"nGenMuonPreFSR/i");
+//	tree_->Branch("nGenPartPreFSR",&nGenPartPreFSR_,"nGenPartPreFSR/i");
+//	tree_->Branch("nGenPart746",&nGenPart746_,"nGenPart746/i");
+//	tree_->Branch("nGenMuonPreFSR",&nGenMuonPreFSR_,"nGenMuonPreFSR/i");
 	tree_->Branch("nGenPartPostFSR",&nGenPartPostFSR_,"nGenPartPostFSR/i");
 	tree_->Branch("GenPart_eta",&GenPart_eta_,"GenPart_eta[nGenPart]/F");
 	tree_->Branch("GenPart_mass",&GenPart_mass_,"GenPart_mass[nGenPart]/F");
 	tree_->Branch("GenPart_phi",&GenPart_phi_,"GenPart_phi[nGenPart]/F");
 	tree_->Branch("GenPart_pt",&GenPart_pt_,"GenPart_pt[nGenPart]/F");
+	tree_->Branch("GenPart_motherPdgId",&GenPart_motherPdgId_,"GenPart_motherPdgId[nGenPart]/I");
 	tree_->Branch("GenPart_genPartIdxMother",&GenPart_genPartIdxMother_,"GenPart_genPartIdxMother[nGenPart]/I");
 	tree_->Branch("GenPart_pdgId",&GenPart_pdgId_,"GenPart_pdgId[nGenPart]/I");
 	tree_->Branch("GenPart_status",&GenPart_status_,"GenPart_status[nGenPart]/I");
@@ -435,7 +436,7 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
 	reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
 	ROOT::Math::PositionVector3D<ROOT::Math::Cartesian3D<float>,ROOT::Math::DefaultCoordinateSystemTag> genvertex=iEvent.get(genvertexToken_);
-	getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_, GenPart_PostFSR_);
+	getGenLeptonIdxandFill(iEvent.get(genparticleToken_), GenPart_eta_, GenPart_mass_, GenPart_phi_, GenPart_pt_, GenPart_genPartIdxMother_, GenPart_pdgId_, GenPart_status_, GenPart_statusFlags_, GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_, GenPart_PostFSR_, GenPart_motherPdgId_, GenPart_origIdx_);
 	std::vector<LHEEventProduct::WGT> weights=iEvent.get(lheinfoToken_).weights();
 	Float_t originalweight=iEvent.get(lheinfoToken_).originalXWGTUP();
 	for (std::vector<LHEEventProduct::WGT>::const_iterator it=weights.begin(); it!=weights.end(); it++) {
@@ -541,20 +542,18 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		if (muon.passed(reco::Muon::TkIsoTight)) Muon_tkIsoId_[i]=2;
 		Muon_genPartIdx_[i]=-1;
 		Muon_genPartPreFSRIdx_[i]=-1;
-		int j=0;
-		for (const auto& genparticle : iEvent.get(genparticleToken_)) {
-			if (abs(genparticle.pdgId())==13)
-				if (genparticle.status()==1) 
-					if (muon.genLepton()==&genparticle)
+		for (unsigned int j=0; j!=nGenPart_; j++) {
+			if (abs(GenPart_pdgId_[j])==13)
+				if (GenPart_status_[j]==1)
+					if (muon.genLepton()==&(iEvent.get(genparticleToken_)[GenPart_origIdx_[j]]))
 						Muon_genPartIdx_[i]=j;
-			j++;
 		}
 		if (Muon_genPartIdx_[i]>0) {
 			if ((Muon_genPartIdx_[i]==GenPart_postFSRLepIdx1_)||(Muon_genPartIdx_[i]==GenPart_postFSRLepIdx2_)) {
-				int pdgid=iEvent.get(genparticleToken_)[Muon_genPartIdx_[i]].pdgId();
-				if (pdgid==iEvent.get(genparticleToken_)[GenPart_preFSRLepIdx1_].pdgId())
+				int pdgid=GenPart_pdgId_[Muon_genPartIdx_[i]];
+				if (pdgid==GenPart_pdgId_[GenPart_preFSRLepIdx1_])
 					Muon_genPartPreFSRIdx_[i]=GenPart_preFSRLepIdx1_;
-				if (pdgid==iEvent.get(genparticleToken_)[GenPart_preFSRLepIdx2_].pdgId())
+				if (pdgid==GenPart_pdgId_[GenPart_preFSRLepIdx2_])
 					Muon_genPartPreFSRIdx_[i]=GenPart_preFSRLepIdx2_;
 			}
 		}
