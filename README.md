@@ -23,17 +23,17 @@ scram b
 ```
 
 # Run on MiniAOD
-CmsRun config files are available in the python/ directory
+CmsRun config files are available in the python/ directory. Select according to desired era
 ```
 voms-proxy-init -voms cms #to run on files available remotely
-cmsRun python/ConfFile_cfg.py
+cmsRun python/ConfFile_cfg_2016postVFP.py
 ```
 
 # Run on AOD
-CmsRun config files are available in the python/ directory
+CmsRun config files are available in the python/ directory. Select according to desired era
 ```
 voms-proxy-init -voms cms #to run on files available remotely
-cmsRun python/ConfFile_cfg_AOD.py
+cmsRun python/ConfFile_cfg_AOD_2016postVFP.py
 ```
 
 # CRAB submission
@@ -41,6 +41,6 @@ cmsRun python/ConfFile_cfg_AOD.py
 voms-proxy-init -voms cms
 export X509_USER_PROXY = {name of the proxy file}
 crab submit -c crab_config.py #to be modified to be run on MiniAOD or AOD.
-#In particular "config.JobType.psetName = python/ConfFile_cfg.py" or "config.JobType.psetName = python/ConfFile_cfg_AOD.py"
+#In particular "config.JobType.psetName = python/ConfFile_cfg_{era}.py" or "config.JobType.psetName = python/ConfFile_cfg_AOD_{era}.py"
 #and config.Data.inputDataset need to be modified
 ```

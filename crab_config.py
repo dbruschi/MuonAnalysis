@@ -12,8 +12,7 @@ config.section_("JobType")
 config.JobType.numCores = 4
 config.JobType.maxMemoryMB = 8000
 config.JobType.pluginName = 'Analysis'
-config.JobType.psetName = 'python/ConfFile_cfg_AOD.py'
-config.JobType.inputFiles = ['files/']
+config.JobType.psetName = 'python/ConfFile_cfg_AOD_2016postVFP.py'
 
 config.section_("Data")
 #config.Data.inputDataset = '/DYJetsToMuMu_M-50_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos/RunIISummer20UL16MiniAOD-106X_mcRun2_asymptotic_v13-v2/MINIAODSIM'

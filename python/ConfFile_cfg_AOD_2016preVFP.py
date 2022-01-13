@@ -2,17 +2,17 @@
 # using: 
 # Revision: 1.19 
 # Source: /local/reps/CMSSW/CMSSW/Configuration/Applications/python/ConfigBuilder.py,v 
-# with command line options: --python_filename SMP-RunIISummer20UL16MiniAODv2-00067_1_cfg.py --eventcontent MINIAODSIM --customise Configuration/DataProcessing/Utils.addMonitoring --datatier MINIAODSIM --fileout file:SMP-RunIISummer20UL16MiniAODv2-00067.root --conditions 106X_mcRun2_asymptotic_v17 --step PAT --procModifiers run2_miniAOD_UL --geometry DB:Extended --filein dbs:/DYJetsToMuMu_M-50_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos/RunIISummer20UL16RECO-106X_mcRun2_asymptotic_v13-v2/AODSIM --era Run2_2016 --runUnscheduled --no_exec --mc
+# with command line options: --python_filename SMP-RunIISummer20UL16MiniAODAPVv2-00070_1_cfg.py --eventcontent MINIAODSIM --customise Configuration/DataProcessing/Utils.addMonitoring --datatier MINIAODSIM --fileout file:SMP-RunIISummer20UL16MiniAODAPVv2-00070.root --conditions 106X_mcRun2_asymptotic_preVFP_v11 --step PAT --procModifiers run2_miniAOD_UL --geometry DB:Extended --filein dbs:/DYJetsToMuMu_M-50_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos/RunIISummer20UL16RECOAPV-106X_mcRun2_asymptotic_preVFP_v8-v2/AODSIM --era Run2_2016_HIPM --runUnscheduled --no_exec --mc
 import FWCore.ParameterSet.Config as cms
 
-from Configuration.Eras.Era_Run2_2016_cff import Run2_2016
+from Configuration.Eras.Era_Run2_2016_HIPM_cff import Run2_2016_HIPM
 from Configuration.ProcessModifiers.run2_miniAOD_UL_cff import run2_miniAOD_UL
 from PhysicsTools.PatUtils.l1PrefiringWeightProducer_cfi import l1PrefiringWeightProducer
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 import os
 
-process = cms.Process('PAT',Run2_2016,run2_miniAOD_UL)
+process = cms.Process('PAT',Run2_2016_HIPM,run2_miniAOD_UL)
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -33,8 +33,7 @@ process.maxEvents = cms.untracked.PSet(
 
 # Input source
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring( ( '/store/mc/RunIISummer20UL16RECO/DYJetsToMuMu_M-50_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos/AODSIM/106X_mcRun2_asymptotic_v13-v2/230001/7C290607-FEFD-6243-AFC8-802B0FCA7260.root'
-     ) ),
+    fileNames = cms.untracked.vstring( ('/store/mc/RunIISummer20UL16RECO/DYJetsToMuMu_M-50_TuneCP5_13TeV-powhegMiNNLO-pythia8-photos/AODSIM/106X_mcRun2_asymptotic_v13-v2/230001/7C290607-FEFD-6243-AFC8-802B0FCA7260.root' ) ), #you may want to change it (especially because it is postVFP)
     secondaryFileNames = cms.untracked.vstring()
 )
 
@@ -63,7 +62,7 @@ process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
     dropMetaData = cms.untracked.string('ALL'),
     eventAutoFlushCompressedSize = cms.untracked.int32(-900),
     fastCloning = cms.untracked.bool(False),
-    fileName = cms.untracked.string('file:SMP-RunIISummer20UL16MiniAODv2-00067.root'),
+    fileName = cms.untracked.string('file:SMP-RunIISummer20UL16MiniAODAPVv2-00070.root'),
     outputCommands = process.MINIAODSIMEventContent.outputCommands,
     overrideBranchesSplitLevel = cms.untracked.VPSet(
         cms.untracked.PSet(
@@ -123,7 +122,7 @@ process.MINIAODSIMoutput = cms.OutputModule("PoolOutputModule",
 
 # Other statements
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '106X_mcRun2_asymptotic_v17', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '106X_mcRun2_asymptotic_preVFP_v11', '')
 
 # Path and EndPath definitions
 process.Flag_trackingFailureFilter = cms.Path(process.goodVertices+process.trackingFailureFilter)
@@ -165,7 +164,7 @@ if useGTforConditions == False:
     CondDBSetup = CondDB.clone()
     CondDBSetup.__delattr__('connect')
 
-    erajec="Summer19UL16_V7_MC"
+    erajec="Summer19UL16APV_V7_MC"
     process.jec = cms.ESSource("PoolDBESSource",CondDBSetup,
     #                           connect = cms.string( "frontier://FrontierPrep/CMS_COND_PHYSICSTOOLS"),
                                connect = cms.string('sqlite_file:'+erajec+'.db'),
@@ -210,8 +209,6 @@ if useGTforConditions == False:
 
     process.es_prefer_jer = cms.ESPrefer('PoolDBESSource', 'jer')
 
-'''
-
 runMetCorAndUncFromMiniAOD(process,
                            isData=False,
 #                           pfCandColl=cms.InputTag("packedPFCandidates"), #maybe not needed
@@ -220,21 +217,10 @@ runMetCorAndUncFromMiniAOD(process,
 #                           reclusterJets = False #maybe not needed
                            )
 
-'''
-
-process.prefiringweightpreVFP = l1PrefiringWeightProducer.clone(
+process.Prefiringweight = l1PrefiringWeightProducer.clone(
    TheJets = cms.InputTag("slimmedJets"),
    DataEraECAL = cms.string("UL2016preVFP"),
    DataEraMuon = cms.string("2016preVFP"),
-   UseJetEMPt = cms.bool(False),
-   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
-   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
-)
-
-process.prefiringweightpostVFP = l1PrefiringWeightProducer.clone(
-   TheJets = cms.InputTag("slimmedJets"),
-   DataEraECAL = cms.string("UL2016postVFP"),
-   DataEraMuon = cms.string("2016postVFP"),
    UseJetEMPt = cms.bool(False),
    PrefiringRateSystematicUnctyECAL = cms.double(0.2),
    PrefiringRateSystematicUnctyMuon = cms.double(0.2)
@@ -250,13 +236,14 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    geneventinfo = cms.untracked.InputTag('generator'),
    pileupinfo = cms.untracked.InputTag('slimmedAddPileupInfo'),
    lheinfo  = cms.untracked.InputTag('externalLHEProducer'),
+   era = cms.untracked.string('2016preVFP'),
    datatier = cms.untracked.string('AOD')
                               )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaodAOD.root") )
 
-#process.p = cms.Path(process.fullPatMetSequence*process.prefiringweightpreVFP*process.prefiringweightpostVFP*process.demo) 
-process.p = cms.Path(process.prefiringweightpreVFP*process.prefiringweightpostVFP*process.demo) #uncomment previous line to reevaluate MET
+#process.p = cms.Path(process.fullPatMetSequence*process.Prefiringweight*process.demo) 
+process.p = cms.Path(process.Prefiringweight*process.demo) #uncomment previous line to reevaluate MET
 
 # Schedule definition
 process.schedule = cms.Schedule(process.Flag_HBHENoiseFilter,process.Flag_HBHENoiseIsoFilter,process.Flag_CSCTightHaloFilter,process.Flag_CSCTightHaloTrkMuUnvetoFilter,process.Flag_CSCTightHalo2015Filter,process.Flag_globalTightHalo2016Filter,process.Flag_globalSuperTightHalo2016Filter,process.Flag_HcalStripHaloFilter,process.Flag_hcalLaserEventFilter,process.Flag_EcalDeadCellTriggerPrimitiveFilter,process.Flag_EcalDeadCellBoundaryEnergyFilter,process.Flag_ecalBadCalibFilter,process.Flag_goodVertices,process.Flag_eeBadScFilter,process.Flag_ecalLaserCorrFilter,process.Flag_trkPOGFilters,process.Flag_chargedHadronTrackResolutionFilter,process.Flag_muonBadTrackFilter,process.Flag_BadChargedCandidateFilter,process.Flag_BadPFMuonFilter,process.Flag_BadPFMuonDzFilter,process.Flag_hfNoisyHitsFilter,process.Flag_BadChargedCandidateSummer16Filter,process.Flag_BadPFMuonSummer16Filter,process.Flag_trkPOG_manystripclus53X,process.Flag_trkPOG_toomanystripclus53X,process.Flag_trkPOG_logErrorTooManyClusters,process.Flag_METFilters,process.endjob_step,process.p)

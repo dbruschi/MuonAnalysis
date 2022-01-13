@@ -21,7 +21,7 @@ useGTforConditions=True
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, '106X_mcRun2_asymptotic_v17', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, '106X_mcRun2_asymptotic_preVFP_v11', '')
 
 
 if useGTforConditions == False:
@@ -31,7 +31,7 @@ if useGTforConditions == False:
     CondDBSetup = CondDB.clone()
     CondDBSetup.__delattr__('connect')
 
-    erajec="Summer19UL16_V7_MC"
+    erajec="Summer19UL16APV_V7_MC"
     process.jec = cms.ESSource("PoolDBESSource",CondDBSetup,
     #                           connect = cms.string( "frontier://FrontierPrep/CMS_COND_PHYSICSTOOLS"),
                                connect = cms.string('sqlite_file:'+erajec+'.db'),
@@ -84,19 +84,10 @@ runMetCorAndUncFromMiniAOD(process,
 #                           reclusterJets = False #maybe not needed
                            )
 
-process.prefiringweightpreVFP = l1PrefiringWeightProducer.clone(
+process.Prefiringweight = l1PrefiringWeightProducer.clone(
    TheJets = cms.InputTag("slimmedJets"),
    DataEraECAL = cms.string("UL2016preVFP"),
    DataEraMuon = cms.string("2016preVFP"),
-   UseJetEMPt = cms.bool(False),
-   PrefiringRateSystematicUnctyECAL = cms.double(0.2),
-   PrefiringRateSystematicUnctyMuon = cms.double(0.2)
-)
-
-process.prefiringweightpostVFP = l1PrefiringWeightProducer.clone(
-   TheJets = cms.InputTag("slimmedJets"),
-   DataEraECAL = cms.string("UL2016postVFP"),
-   DataEraMuon = cms.string("2016postVFP"),
    UseJetEMPt = cms.bool(False),
    PrefiringRateSystematicUnctyECAL = cms.double(0.2),
    PrefiringRateSystematicUnctyMuon = cms.double(0.2)
@@ -113,10 +104,11 @@ process.demo = cms.EDAnalyzer('MuonAnalysis',
    pileupinfo = cms.untracked.InputTag('slimmedAddPileupInfo'),
    lheinfo  = cms.untracked.InputTag('externalLHEProducer'),
    slimmedmet = cms.untracked.InputTag('slimmedMETs'),
+   era = cms.untracked.string('2016preVFP'),
    datatier = cms.untracked.string('MINIAOD')
                               )
 
 process.TFileService = cms.Service("TFileService", fileName = cms.string("nanoaod.root") )
 
-#process.p = cms.Path(process.fullPatMetSequence*process.prefiringweightpreVFP*process.prefiringweightpostVFP*process.demo) 
-process.p = cms.Path(process.prefiringweightpreVFP*process.prefiringweightpostVFP*process.demo) #uncomment previous line to reevaluate MET
+#process.p = cms.Path(process.fullPatMetSequence*process.Prefiringweight*process.demo) 
+process.p = cms.Path(process.Prefiringweight*process.demo) #uncomment previous line to reevaluate MET

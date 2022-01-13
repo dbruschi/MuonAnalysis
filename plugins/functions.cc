@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "functions.h"
 #include "TLorentzVector.h"
+#include "TSystem.h"
 
 bool genleptoncompare (std::pair<int, float> i, std::pair<int, float> j) { 
 	return (i.second>j.second);
@@ -124,5 +125,38 @@ void getGenLeptonIdxandFill(const std::vector<reco::GenParticle>& genparticles, 
 	else {
 		GenPart_postFSRLepIdx1_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[0]).first : (postfsr[1]).first;
 		GenPart_postFSRLepIdx2_ = (postfsr[0]).second > (postfsr[1]).second ? (postfsr[1]).first : (postfsr[0]).first;
+	}
+}
+
+void setPileUpEra(std::string& era, std::string& pumc, std::string& pudata, std::string& pudata_down, std::string& pudata_up) {
+	if (era=="2016preVFP") {
+		pumc=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/pileup_mc_2016UL.root"); //might need fixing (specific for my config)
+		pudata=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-preVFP-69200ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata.c_str()))) {
+			pudata=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-preVFP-69200ub-99bins.root"); //file above copied in files/ directory (file above doesn't exist when submitting with crab)
+		}
+		pudata_down=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-preVFP-66000ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_down.c_str()))) {
+			pudata_down=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-preVFP-66000ub-99bins.root");
+		}
+		pudata_up=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-preVFP-72400ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_up.c_str()))) {
+			pudata_up=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-preVFP-72400ub-99bins.root");
+		}
+	}
+	if (era=="2016postVFP") {
+		pumc=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/pileup_mc_2016UL.root"); //might need fixing (specific for my config)
+		pudata=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-postVFP-69200ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata.c_str()))) {
+			pudata=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-postVFP-69200ub-99bins.root"); //file above copied in files/ directory (file above doesn't exist when submitting with crab)
+		}
+		pudata_down=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-postVFP-66000ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_down.c_str()))) {
+			pudata_down=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-postVFP-66000ub-99bins.root");
+		}
+		pudata_up=std::string("/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions16/13TeV/PileUp/UltraLegacy/PileupHistogram-goldenJSON-13tev-2016-postVFP-72400ub-99bins.root");
+		if(gSystem->AccessPathName(gSystem->ExpandPathName(pudata_up.c_str()))) {
+			pudata_up=std::string("$CMSSW_BASE/src/MuonAnalysis/MuonAnalysis/data/PileupHistogram-goldenJSON-13tev-2016-postVFP-72400ub-99bins.root");
+		}
 	}
 }
