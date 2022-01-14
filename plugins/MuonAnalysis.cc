@@ -132,7 +132,7 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Int_t GenPart_preFSRLepIdx1_, GenPart_preFSRLepIdx2_, GenPart_postFSRLepIdx1_, GenPart_postFSRLepIdx2_, GenPart_PostFSR_[500], GenPart_origIdx_[500];
 		Bool_t HLT_IsoMu24_, HLT_IsoTkMu24_;
 		Float_t LHEPdfWeight_[500], LHEScaleWeight_[500];
-		UInt_t nLHEPdfWeight_, nLHEScaleWeight_;
+		UInt_t nLHEPdfWeight_, nLHEScaleWeight_, Track_nValidHits_[100], Track_nLostHits_[100], Track_quality_[100];
 		Float_t MET_pt_, MET_phi_, MET_JECUp_pt_, MET_JECDown_pt_, MET_JECUp_phi_, MET_JECDown_phi_, MET_JERUp_pt_, MET_JERDown_pt_;
 		Float_t MET_JERUp_phi_, MET_JERDown_phi_, MET_UnclEnUp_pt_, MET_UnclEnDown_pt_, MET_UnclEnUp_phi_, MET_UnclEnDown_phi_;
 		Float_t Pileup_nTrueInt_;
@@ -286,6 +286,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 		tree_->Branch("Track_closestVtx_X",&Track_closestVtx_X_,"Track_closestVtx_X[nTrack]/F");
 		tree_->Branch("Track_closestVtx_Y",&Track_closestVtx_Y_,"Track_closestVtx_Y[nTrack]/F");
 		tree_->Branch("Track_closestVtx_Z",&Track_closestVtx_Z_,"Track_closestVtx_Z[nTrack]/F");
+		tree_->Branch("Track_nValidHits",&Track_nValidHits_,"Track_nValidHits[nTrack]/i");
+		tree_->Branch("Track_nLostHits",&Track_nLostHits_,"Track_nLostHits[nTrack]/i");
+		tree_->Branch("Track_quality",&Track_quality_,"Track_quality[nTrack]/i");
 	}
 //	tree_->Branch("BeamSpot_x0",&BeamSpot_x0_,"BeamSpot_x0/F");
 //	tree_->Branch("BeamSpot_x0Err",&BeamSpot_x0Err_,"BeamSpot_x0Err_/F");
@@ -550,6 +553,17 @@ MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 			Track_closestVtx_X_[i]=trackvtx.x();
 			Track_closestVtx_Y_[i]=trackvtx.y();
 			Track_closestVtx_Z_[i]=trackvtx.z();
+			Track_nValidHits_[i]=track.numberOfValidHits();
+			Track_nLostHits_[i]=track.numberOfLostHits();
+			Track_quality_[i]=0;
+			if (track.quality(reco::TrackBase::TrackQuality::loose)) Track_quality_[i]|=1 << 0;
+			if (track.quality(reco::TrackBase::TrackQuality::tight)) Track_quality_[i]|=1 << 1;
+			if (track.quality(reco::TrackBase::TrackQuality::highPurity)) Track_quality_[i]|=1 << 2;
+			if (track.quality(reco::TrackBase::TrackQuality::confirmed)) Track_quality_[i]|=1 << 3;
+			if (track.quality(reco::TrackBase::TrackQuality::goodIterative)) Track_quality_[i]|=1 << 4;
+			if (track.quality(reco::TrackBase::TrackQuality::looseSetWithPV)) Track_quality_[i]|=1 << 5;
+			if (track.quality(reco::TrackBase::TrackQuality::highPuritySetWithPV)) Track_quality_[i]|=1 << 6;
+			if (track.quality(reco::TrackBase::TrackQuality::discarded)) Track_quality_[i]|=1 << 7;
 			i++;
 		}
 	}
