@@ -110,14 +110,14 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		Float_t Muon_pfRelIso03_chgPV_[100], Muon_pfRelIso03_chgPU_[100], Muon_pfRelIso03_nhad_[100], Muon_pfRelIso03_pho_[100], Muon_tkRelIso_[100];
 		Float_t  Muon_dxy_[100], Muon_dxyErr_[100], Muon_dz_[100], Muon_dzErr_[100], Muon_dxyBS_[100], Muon_dzBS_[100];
 		Float_t Muon_closestVtx_X_[100], Muon_closestVtx_Y_[100], Muon_closestVtx_Z_[100];
-		Float_t Track_pt_[100], Track_eta_[100], Track_phi_[100], Track_algo_[100], Track_originalAlgo_[100], Track_chi2_[100], Track_ndof_[100], Track_charge_[100];
+		Float_t Track_pt_[100], Track_eta_[100], Track_phi_[100], Track_algo_[100], Track_chi2_[100], Track_ndof_[100], Track_charge_[100];
 		Float_t Track_dxy_[100], Track_dxyErr_[100], Track_dz_[100], Track_dzErr_[100], Track_dxyBS_[100], Track_dzBS_[100];
 		Float_t Track_closestVtx_X_[100], Track_closestVtx_Y_[100], Track_closestVtx_Z_[100];
 		Float_t PV_chi2_, PV_ndof_, PV_score_, PV_x_, PV_y_, PV_z_, BeamSpot_x0_, BeamSpot_y0_, BeamSpot_z0_, BeamSpot_dxdz_, BeamSpot_dydz_, BeamSpot_sigmaZ_;
 		Float_t BeamSpot_x0Err_, BeamSpot_y0Err_, BeamSpot_z0Err_, BeamSpot_dxdzErr_, BeamSpot_dydzErr_, BeamSpot_sigmaZErr_, GenVertex_x_, GenVertex_y_, GenVertex_z_;
 		Bool_t Muon_isTracker_[100], Muon_isGlobal_[100], Muon_isStandalone_[100], Muon_looseId_[100], Muon_mediumId_[100], Muon_mediumPromptId_[100], Muon_tightId_[100];
 		Bool_t Muon_softId_[100], Muon_isPF_[100], Muon_softMvaId_[100], Muon_pfIsoLoose_[100], Muon_pfIsoMedium_[100], Muon_pfIsoTight_[100], Muon_triggered_[100];
-		Int_t Muon_charge_[100];
+		Int_t Muon_charge_[100], Track_originalAlgo_[100];
 		Int_t Muon_BestTrackAlgo_[100], Muon_InnerTrackAlgo_[100], Muon_GlobalTrackAlgo_[100], Muon_BestTrackOriginalAlgo_[100], Muon_InnerTrackOriginalAlgo_[100];
 		Int_t Muon_GlobalTrackOriginalAlgo_[100], Muon_genPartIdx_[100], Muon_genPartPreFSRIdx_[100];
 		UChar_t Muon_highPtId_[100], Muon_miniIsoId_[100], Muon_multiIsoId_[100], Muon_mvaId_[100], Muon_mvaLowPtId_[100], Muon_pfIsoId_[100], Muon_tkIsoId_[100];
@@ -272,8 +272,8 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 		tree_->Branch("Track_pt",&Track_pt_,"Track_pt[nTrack]/F");
 		tree_->Branch("Track_eta",&Track_eta_,"Track_eta[nTrack]/F");
 		tree_->Branch("Track_phi",&Track_phi_,"Track_phi[nTrack]/F");
-	//	tree_->Branch("Track_algo",&Track_algo_,"Track_algo[nTrack]/F");
-		tree_->Branch("Track_originalAlgo",&Track_originalAlgo_,"Track_originalAlgo[nTrack]/F");
+	//	tree_->Branch("Track_algo",&Track_algo_,"Track_algo[nTrack]/I");
+		tree_->Branch("Track_originalAlgo",&Track_originalAlgo_,"Track_originalAlgo[nTrack]/I");
 		tree_->Branch("Track_chi2",&Track_chi2_,"Track_chi2[nTrack]/F");
 		tree_->Branch("Track_ndof",&Track_ndof_,"Track_ndof[nTrack]/F");
 		tree_->Branch("Track_charge",&Track_charge_,"Track_charge[nTrack]/F");
