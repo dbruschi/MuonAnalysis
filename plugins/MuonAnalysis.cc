@@ -103,6 +103,8 @@ class MuonAnalysis : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 		std::string era_;
 		bool isAOD_;
 		TTree * tree_;
+		UInt_t run, luminosityBlock;
+		ULong64_t event;
 		UInt_t nMuon_, nTrack_, nGenPart_, nGenPartPreFSR_, nGenMuonPreFSR_, nGenPart746_, nGenPartPostFSR_;
 		Float_t Muon_pt_[100], Muon_eta_[100], Muon_phi_[100], Muon_mass_[100], Muon_pfRelIso04_all_[100], Muon_pfRelIso04_chgPV_[100], Muon_pfRelIso04_chgPU_[100];
 		Float_t Muon_standpt_[100], Muon_standeta_[100], Muon_standphi_[100];
@@ -362,6 +364,9 @@ MuonAnalysis::MuonAnalysis(const edm::ParameterSet& iConfig)
 	tree_->Branch("MET_UnclEnDown_pt",&MET_UnclEnDown_pt_,"MET_UnclEnDown_pt/F");
 	tree_->Branch("MET_UnclEnUp_phi",&MET_UnclEnUp_phi_,"MET_UnclEnUp_phi/F");
 	tree_->Branch("MET_UnclEnDown_phi",&MET_UnclEnDown_phi_,"MET_UnclEnDown_phi/F");
+	tree_->Branch("event",&event,"event/l");
+	tree_->Branch("run",&run,"run/i");
+	tree_->Branch("luminosityBlock",&luminosityBlock,"luminosityBlock/i");
 	tree_->SetAutoSave(0);
 }
 
@@ -384,6 +389,9 @@ void
 MuonAnalysis::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
 	using namespace edm;
+	event=iEvent.eventAuxiliary().event();
+	run=iEvent.eventAuxiliary().run();
+	luminosityBlock=iEvent.eventAuxiliary().luminosityBlock();
 	UInt_t i=0; 
 	reco::Vertex primaryvertex=(iEvent.get(vertexToken_))[0];
 	reco::BeamSpot beamspot=iEvent.get(beamspotToken_);
