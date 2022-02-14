@@ -5,6 +5,9 @@
 #include <map>
 #include <cmath>
 
+#define DISTANCE 0.3
+#define TRACKDISTANCE 0.2
+
 using namespace ROOT;
 
 RVec<float> goodgenvalue(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &GenPart_postFSRLepIdx2, RVec<float> &GenPart_eta, RVec<float> &GenPart_phi, RVec<int> &GenPart_status) {
@@ -18,7 +21,7 @@ RVec<float> goodgenvalue(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, i
 				TLorentzVector cand1, cand2;
 				cand1.SetPtEtaPhiM(3.,GenPart_eta[i],GenPart_phi[i],0.);
 				cand2.SetPtEtaPhiM(3.,GenPart_eta[j],GenPart_phi[j],0.);
-				if (cand1.DeltaR(cand2)<0.3) condition=false;
+				if (cand1.DeltaR(cand2)<DISTANCE) condition=false;
 			}
 			if (condition) v.emplace_back(GenPart_pt[i]);
 		}
@@ -37,12 +40,24 @@ RVec<int> goodgenidx(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &
 				TLorentzVector cand1, cand2;
 				cand1.SetPtEtaPhiM(3.,GenPart_eta[i],GenPart_phi[i],0.);
 				cand2.SetPtEtaPhiM(3.,GenPart_eta[j],GenPart_phi[j],0.);
-				if (cand1.DeltaR(cand2)<0.3) condition=false;
+				if (cand1.DeltaR(cand2)<DISTANCE) condition=false;
 			}
 			if (condition) v.emplace_back(i);
 		}
 	}
 	return v;
+}
+
+bool cleaner(int idx, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone) {
+	for (auto i=0U; i < Muon_standeta.size(); i++) {
+		if (i==idx) continue;
+		if (!Muon_isStandalone[i]) continue;
+		TLorentzVector cand, cand2;
+		cand.SetPtEtaPhiM(5.,Muon_standeta[idx],Muon_standphi[idx],0.);
+		cand2.SetPtEtaPhiM(5.,Muon_standeta[i],Muon_standphi[i],0.);
+		if (cand.DeltaR(cand2)<0.1) return false;
+	}
+	return true;
 }
 
 //STANDALONE
@@ -58,13 +73,16 @@ RVec<float> goodmuonboolstand(RVec<float> &Muon_standeta, RVec<float> &Muon_stan
 			cand2.SetPtEtaPhiM(5.,Muon_standeta[j],Muon_standphi[j],0.);
 			Map.insert({cand.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
 		else v.emplace_back(0); 
 	}
 	return v;
 }
 
-RVec<float> goodtrack(RVec<float> &value, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_chi2, RVec<float> Track_originalAlgo, RVec<unsigned int> Track_quality){
+RVec<float> goodtrack(RVec<float> &value, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_chi2, RVec<int> Track_originalAlgo, RVec<unsigned int> Track_quality){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -78,12 +96,12 @@ RVec<float> goodtrack(RVec<float> &value, RVec<float> &Track_eta, RVec<float> &T
 		}
 		if (Map.size()==0) continue;
 		int idx=Map.begin()->second;
-		if (Map.begin()->first<0.05) v.emplace_back(value[j]);
+		if (Map.begin()->first<TRACKDISTANCE) v.emplace_back(value[j]);
 	}
 	return v;
 }
 
-RVec<float> goodtrackreal(RVec<float> &value, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_chi2, RVec<float> Track_originalAlgo, RVec<unsigned int> Track_quality){
+RVec<float> goodtrackreal(RVec<float> &value, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_chi2, RVec<int> Track_originalAlgo, RVec<unsigned int> Track_quality){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -97,7 +115,7 @@ RVec<float> goodtrackreal(RVec<float> &value, RVec<float> &Track_eta, RVec<float
 		}
 		if (Map.size()==0) continue;
 		int idx=Map.begin()->second;
-		if (Map.begin()->first<0.05) v.emplace_back(value[idx]);
+		if (Map.begin()->first<TRACKDISTANCE) v.emplace_back(value[idx]);
 	}
 	return v;
 }
@@ -113,7 +131,10 @@ RVec<bool> isgoodtrack(RVec<float> &goodtracketa, RVec<float> &goodtrackphi, RVe
 			cand2.SetPtEtaPhiM(5.,Muon_standeta[j],Muon_standphi[j],0.);
 			Map.insert({cand.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)) v.emplace_back(true);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(true);
+			else v.emplace_back(false);
+		}
 		else v.emplace_back(false);
 	}
 	return v;
@@ -121,7 +142,7 @@ RVec<bool> isgoodtrack(RVec<float> &goodtracketa, RVec<float> &goodtrackphi, RVe
 
 //TRACKING
 
-RVec<float> goodmuonbooltrack(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &Track_originalAlgo, RVec<unsigned int> &Track_quality, RVec<float> &Track_chi2) {
+RVec<float> goodmuonbooltrack(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<int> &Track_originalAlgo, RVec<unsigned int> &Track_quality, RVec<float> &Track_chi2) {
 	RVec<float> v;
 	for (auto i=0U;i < goodgeneta.size(); ++i) {
 		std::map<float,int> Map;
@@ -134,7 +155,7 @@ RVec<float> goodmuonbooltrack(RVec<float> &goodgeneta, RVec<float> &goodgenphi, 
 //			if ((cand.DeltaR(cand2)<0.3)&&(Track_chi2[j]<5.)&&(Track_quality[j]&4)&&(Track_originalAlgo[j]!=13)&&(Track_originalAlgo[j]!=14)) condition=true;
 //			if ((cand.DeltaR(cand2)<0.1)&&(Track_chi2[j]<5.)) condition=true;
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)) v.emplace_back(1);
 		else v.emplace_back(0); 
 	}
 	return v;
@@ -152,7 +173,9 @@ RVec<float> goodmuon(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &g
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if (Map.begin()->first<0.1) v.emplace_back(value[j]);
+		if (Map.begin()->first<DISTANCE) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(value[j]);
+		}
 	}
 	return v;
 }
@@ -169,12 +192,14 @@ RVec<float> goodmuonreal(RVec<float> &value, RVec<float> &goodgeneta, RVec<float
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if (Map.begin()->first<0.1) v.emplace_back(value[Map.begin()->second]);
+		if (Map.begin()->first<DISTANCE) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(value[Map.begin()->second]);
+		}
 	}
 	return v;
 }
 
-RVec<bool> isgoodmuon(RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodmuoneta, RVec<float> &goodmuonphi, RVec<float> &Track_originalAlgo, RVec<unsigned int> &Track_quality, RVec<float> &Track_chi2) {
+RVec<bool> isgoodmuon(RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &goodmuoneta, RVec<float> &goodmuonphi, RVec<int> &Track_originalAlgo, RVec<unsigned int> &Track_quality, RVec<float> &Track_chi2) {
 	RVec<bool> v;
 	for (auto i=0U;i < goodmuoneta.size(); ++i) {
 		std::map<float,int> Map;
@@ -186,7 +211,7 @@ RVec<bool> isgoodmuon(RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float
 			Map.insert({cand.DeltaR(cand2),j});
 //			if ((cand.DeltaR(cand2)<0.1)&&(Track_chi2[j]<5.)) condition=true;
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)) v.emplace_back(true);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)) v.emplace_back(true);
 		else v.emplace_back(false);
 	}
 	return v;
@@ -194,7 +219,7 @@ RVec<bool> isgoodmuon(RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float
 
 //GLOBAL
 
-RVec<bool> goodmuonboolglobal(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal) {
+RVec<bool> goodmuonboolglobal(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal) {
 	RVec<bool> v;
 	for (auto i=0U; i<goodgeneta.size(); i++) {
 		std::map<float,int> Map;
@@ -206,7 +231,10 @@ RVec<bool> goodmuonboolglobal(RVec<float> &goodgeneta, RVec<float> &goodgenphi, 
 			//if (Muon_pt[j]<15.) continue;
 			Map.insert({cand1.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)&&(Muon_isGlobal[Map.begin()->second])) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)&&(Muon_isGlobal[Map.begin()->second])) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
 		else v.emplace_back(0); 
 	}
 	return v;
@@ -225,7 +253,9 @@ RVec<int> goodmuonidx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<flo
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if (Map.begin()->first<0.1) v.emplace_back(Map.begin()->second);
+		if (Map.begin()->first<DISTANCE) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(Map.begin()->second);
+		}
 	}
 	return v;
 }
