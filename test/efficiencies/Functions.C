@@ -10,10 +10,10 @@
 
 using namespace ROOT;
 
-RVec<float> goodgenvalue(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &GenPart_postFSRLepIdx2, RVec<float> &GenPart_eta, RVec<float> &GenPart_phi, RVec<int> &GenPart_status) {
+RVec<float> goodgenvalue(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &GenPart_postFSRLepIdx2, RVec<float> &GenPart_eta, RVec<float> &GenPart_phi, RVec<int> &GenPart_status, RVec<int> &GenPart_pdgId) {
 	RVec<float> v;
 	for (auto i=0U;i < GenPart_pt.size(); ++i) {
-		if ((i==GenPart_postFSRLepIdx1)||(i==GenPart_postFSRLepIdx2)) {
+		if (((i==GenPart_postFSRLepIdx1)||(i==GenPart_postFSRLepIdx2))&&(abs(GenPart_pdgId[i])==13)) {
 			bool condition=true;
 			for (auto j=0U; j < GenPart_pt.size(); ++j) {
 				if (i==j) continue;
@@ -29,10 +29,10 @@ RVec<float> goodgenvalue(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, i
 	return v;
 }
 
-RVec<int> goodgenidx(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &GenPart_postFSRLepIdx2, RVec<float> &GenPart_eta, RVec<float> &GenPart_phi, RVec<int> &GenPart_status) {
+RVec<int> goodgenidx(RVec<float> &GenPart_pt, int &GenPart_postFSRLepIdx1, int &GenPart_postFSRLepIdx2, RVec<float> &GenPart_eta, RVec<float> &GenPart_phi, RVec<int> &GenPart_status, RVec<int> &GenPart_pdgId) {
 	RVec<int> v;
 	for (auto i=0U;i < GenPart_pt.size(); ++i) {
-		if ((i==GenPart_postFSRLepIdx1)||(i==GenPart_postFSRLepIdx2)) {
+		if (((i==GenPart_postFSRLepIdx1)||(i==GenPart_postFSRLepIdx2))&&(abs(GenPart_pdgId[i])==13)) {
 			bool condition=true;
 			for (auto j=0U; j < GenPart_pt.size(); ++j) {
 				if (i==j) continue;
@@ -271,7 +271,7 @@ RVec<bool> goodstand(RVec<int> &goodmuonidx, RVec<bool> &Muon_isGlobal) {
 
 //IDIP
 
-RVec<bool> goodmuonboolidip(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS) {
+RVec<bool> goodmuonboolidip(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS) {
 	RVec<bool> v;
 	for (auto i=0U; i<goodgeneta.size(); i++) {
 		std::map<float,int> Map;
@@ -283,7 +283,10 @@ RVec<bool> goodmuonboolidip(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RV
 			//if (Muon_pt[j]<15.) continue;
 			Map.insert({cand1.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
 		else v.emplace_back(0); 
 	}
 	return v;
@@ -300,7 +303,7 @@ RVec<bool> goodglobal(RVec<int> &goodglobalidx, RVec<bool> &Muon_mediumId, RVec<
 
 //TRIGGERMATCH
 
-RVec<bool> goodmuonbooltrigger(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered) {
+RVec<bool> goodmuonbooltrigger(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered) {
 	RVec<bool> v;
 	for (auto i=0U; i<goodgeneta.size(); i++) {
 		std::map<float,int> Map;
@@ -312,13 +315,16 @@ RVec<bool> goodmuonbooltrigger(RVec<float> &goodgeneta, RVec<float> &goodgenphi,
 			//if (Muon_pt[j]<15.) continue;
 			Map.insert({cand1.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) {
+			if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
 		else v.emplace_back(0); 
 	}
 	return v;
 }
 
-RVec<float> goodidip(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS){
+RVec<float> goodidip(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -330,12 +336,12 @@ RVec<float> goodidip(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &g
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if ((Map.begin()->first<0.1)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) v.emplace_back(value[j]);
+		if ((Map.begin()->first<DISTANCE)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(value[j]);
 	}
 	return v;
 }
 
-RVec<int> goodidipidx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS){
+RVec<int> goodidipidx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -347,14 +353,14 @@ RVec<int> goodidipidx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<flo
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if ((Map.begin()->first<0.1)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) v.emplace_back(Map.begin()->second);
+		if ((Map.begin()->first<DISTANCE)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)) if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(Map.begin()->second);
 	}
 	return v;
 }
 
 //ISOLATION
 
-RVec<bool> goodmuonboolisolation(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all) {
+RVec<bool> goodmuonboolisolation(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all) {
 	RVec<bool> v;
 	for (auto i=0U; i<goodgeneta.size(); i++) {
 		std::map<float,int> Map;
@@ -366,13 +372,15 @@ RVec<bool> goodmuonboolisolation(RVec<float> &goodgeneta, RVec<float> &goodgenph
 			//if (Muon_pt[j]<15.) continue;
 			Map.insert({cand1.DeltaR(cand2),j});
 		}
-		if ((Map.size()>0)&&(Map.begin()->first<0.1)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])&&(Muon_pfRelIso04_all[Map.begin()->second]<0.15)) v.emplace_back(1);
+		if ((Map.size()>0)&&(Map.begin()->first<DISTANCE)&&(Muon_isGlobal[Map.begin()->second])&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])&&(Muon_pfRelIso04_all[Map.begin()->second]<0.15)) {if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
 		else v.emplace_back(0); 
 	}
 	return v;
 }
 
-RVec<float> goodtrigger(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered){
+RVec<float> goodtrigger(RVec<float> &value, RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -384,12 +392,12 @@ RVec<float> goodtrigger(RVec<float> &value, RVec<float> &goodgeneta, RVec<float>
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if ((Map.begin()->first<0.1)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) v.emplace_back(value[j]);
+		if ((Map.begin()->first<DISTANCE)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(value[j]);
 	}
 	return v;
 }
 
-RVec<int> goodtriggeridx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered){
+RVec<int> goodtriggeridx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered){
 	RVec<float> v;
 	for (auto j=0U; j < goodgeneta.size(); ++j) {
 		std::map<float,int> Map;
@@ -401,7 +409,7 @@ RVec<int> goodtriggeridx(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<
 			Map.insert({cand.DeltaR(cand2),i});
 		}
 		if (Map.size()==0) continue;
-		if ((Map.begin()->first<0.1)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) v.emplace_back(Map.begin()->second);
+		if ((Map.begin()->first<DISTANCE)&&(Muon_mediumId[Map.begin()->second])&&(fabs(Muon_dxyBS[Map.begin()->second])<0.05)&&(Muon_triggered[Map.begin()->second])) if (cleaner(Map.begin()->second,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(Map.begin()->second);
 	}
 	return v;
 }

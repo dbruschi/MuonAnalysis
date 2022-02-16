@@ -161,7 +161,7 @@ RVec<float> deltargood(RVec<float> &goodgeneta, RVec<float> &goodgenphi, RVec<fl
 void globalefficiency(const char* name) {
 	gStyle->SetOptStat(0);
 	RDataFrame df("demo/Events",name);
-	auto d1=df.Define("goodgenpt",goodgenvalue,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status"}).Define("goodgeneta",goodgenvalue,{"GenPart_eta","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status"}).Define("goodgenphi",goodgenvalue,{"GenPart_phi","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status"}).Define("goodgenidx",goodgenidx,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status"}).Define("goodmuonbool",goodmuonboolglobal1,{"goodgeneta", "goodgenphi", "goodgenidx", "Muon_genPartIdx", "Muon_isGlobal","Muon_standeta","Muon_standphi","Muon_eta","Muon_phi","Muon_isStandalone"}).Define("nmuon",count,{"goodgeneta", "goodgenphi", "goodgenidx", "Muon_genPartIdx", "Muon_isGlobal","Muon_standeta","Muon_standphi","Muon_eta","Muon_phi","Muon_pt","Muon_standpt","goodgenpt","Muon_standValidCSChits","Muon_standValidRPChits"});
+	auto d1=df.Define("goodgenpt",goodgenvalue,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgeneta",goodgenvalue,{"GenPart_eta","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenphi",goodgenvalue,{"GenPart_phi","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenidx",goodgenidx,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodmuonbool",goodmuonboolglobal1,{"goodgeneta", "goodgenphi", "goodgenidx", "Muon_genPartIdx", "Muon_isGlobal","Muon_standeta","Muon_standphi","Muon_eta","Muon_phi","Muon_isStandalone"}).Define("nmuon",count,{"goodgeneta", "goodgenphi", "goodgenidx", "Muon_genPartIdx", "Muon_isGlobal","Muon_standeta","Muon_standphi","Muon_eta","Muon_phi","Muon_pt","Muon_standpt","goodgenpt","Muon_standValidCSChits","Muon_standValidRPChits"});
 	d1=d1.Define("goodtrackpt",goodtrack,{"goodgenpt","Track_eta","Track_phi","goodgeneta","goodgenphi","Track_chi2","Track_originalAlgo","Track_quality"}).Define("goodtracketa",goodtrack,{"goodgeneta","Track_eta","Track_phi","goodgeneta","goodgenphi","Track_chi2","Track_originalAlgo","Track_quality"}).Define("goodtrackphi",goodtrack,{"goodgenphi","Track_eta","Track_phi","goodgeneta","goodgenphi","Track_chi2","Track_originalAlgo","Track_quality"}).Define("goodtrackrealeta",goodtrackreal,{"Track_eta","Track_eta","Track_phi","goodgeneta","goodgenphi","Track_chi2","Track_originalAlgo","Track_quality"}).Define("goodtrackrealphi",goodtrackreal,{"Track_phi","Track_eta","Track_phi","goodgeneta","goodgenphi","Track_chi2","Track_originalAlgo","Track_quality"});
 	d1=d1.Define("goodtrack",isgoodtrack,{"goodtrackrealeta","goodtrackrealphi","Muon_standeta","Muon_standphi","Muon_isStandalone"});
 	d1=d1.Define("goodstandpt",goodmuon,{"goodgenpt","goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"}).Define("goodstandeta",goodmuon,{"goodgeneta","goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"}).Define("goodstandphi",goodmuon,{"goodgenphi","goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"}).Define("goodmuonidx",goodmuonidx,{"goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"}).Define("deltargood",deltargood,{"goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"}).Define("deltarcritical",deltarcritical,{"goodgeneta","goodgenphi","Muon_standeta","Muon_standphi","Muon_isStandalone"});
@@ -190,7 +190,7 @@ void globalefficiency(const char* name) {
 	TCanvas *c1=new TCanvas();
 	c1->cd();
 	c1->Draw();
-	Histo1->SetTitle("P(global&&#DeltaR_{variables}<0.3|gen)");
+	Histo1->SetTitle("P(global|gen)");
 //	Histo1->SetTitle("P(global&&gen)/P(standalone&&gen)");
 	Histo1->GetXaxis()->SetTitle("GenMuon #eta");
 	Histo1->GetYaxis()->SetTitle("GenMuon p_{T} [GeV]");
@@ -198,7 +198,7 @@ void globalefficiency(const char* name) {
 	TCanvas *c3=new TCanvas();
 	c3->cd();
 	c3->Draw();
-	product->SetTitle("P(global&&#DeltaR_{variables}<0.3|standalone)*P(standalone|tracker seeded)");
+	product->SetTitle("P(global|standalone)*P(standalone|tracker seeded)");
 	product->GetXaxis()->SetTitle("GenMuon #eta");
 	product->GetYaxis()->SetTitle("GenMuon p_{T} [GeV]");
 	product->Draw("colz");
@@ -237,8 +237,8 @@ void globalefficiency(const char* name) {
 	Counter->Draw("colz");
 	std::cout<<cont1<<" "<<cont2<<" "<<cont3<<" "<<cont4<<" "<<cont5<<" "<<cont6<<"\n";
 	std::cout<<cont1_2<<" "<<cont2_2<<" "<<cont3_2<<" "<<cont4_2<<" "<<cont5_2<<" "<<cont6_2<<"\n";
-//	output->Write();
-//	output->Close();
+	output->Write();
+	output->Close();
 	TCanvas *c9=new TCanvas();
 	c9->cd();
 	c9->Draw();
