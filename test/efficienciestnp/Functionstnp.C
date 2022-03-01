@@ -321,3 +321,72 @@ RVec<bool> isglobal(RVec<int> &goodtnpflagreco, int bit) {
 	}
 	return v;
 }
+
+//IDIP
+
+RVec<bool> goodmuonboolidip(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])&&(fabs(Muon_dxyBS[idx])<0.05)) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
+
+//TRIGGERMATCH
+
+RVec<bool> goodmuonbooltrigger(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])&&(fabs(Muon_dxyBS[idx])<0.05)&&(Muon_triggered[idx])) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
+
+//ISOLATION
+
+RVec<bool> goodmuonboolisolation(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])&&(fabs(Muon_dxyBS[idx])<0.05)&&(Muon_triggered[idx])&&(Muon_pfRelIso04_all[idx]<0.15)) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
