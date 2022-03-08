@@ -124,7 +124,7 @@ bool cleaner(int idx, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RV
 RVec<int> maketnppairs(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_mass, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all, int option) {
 	RVec<int> pairs;
 	for (auto i=0U; i < Muon_pt.size(); i++) {
-		if (Muon_pt[i]<25.) continue;
+		if (Muon_pt[i]<35.) continue;
 		if (abs(Muon_eta[i])>2.4) continue;
 		if (!Muon_isGlobal[i]) continue;
 		TLorentzVector cand1, cand2;
@@ -134,8 +134,8 @@ RVec<int> maketnppairs(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<float> 
 		if (!cleaner(i,Muon_standeta,Muon_standphi,Muon_isStandalone)) continue;
 		if (!Muon_mediumId[i]) continue;
 		if (abs(Muon_dxyBS[i])>0.05) continue;
-		if (!Muon_triggered[i]) continue;
-		if (Muon_pfRelIso04_all[i]>0.15) continue;
+//		if (!Muon_triggered[i]) continue;
+//		if (Muon_pfRelIso04_all[i]>0.15) continue;
 		for (auto j=0U; j < Muon_pt.size(); j++) {
 			if (i==j) continue;
 			unsigned int flags=0;
@@ -148,6 +148,8 @@ RVec<int> maketnppairs(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<float> 
 			if ((Muon_mediumId[j])&&(abs(Muon_dxyBS[j])<0.05)) flags|=(1<<2);
 			if (Muon_triggered[j]) flags|=(1<<3);
 			if (Muon_pfRelIso04_all[j]<0.15) flags|=(1<<4);
+			if (abs(Muon_dxyBS[j])<0.05) flags|=(1<<5);
+			if (Muon_mediumId[j]) flags|=(1<<6);
 			if (option==0) pairs.push_back(i);
 			if (option==1) pairs.push_back(j);
 			if (option==2) pairs.push_back(flags);
@@ -159,7 +161,7 @@ RVec<int> maketnppairs(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<float> 
 RVec<int> maketnppairstrack(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_mass, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all, RVec<float> &Track_pt, RVec<float> &Track_eta, RVec<float> &Track_phi, RVec<float> &Track_chi2, RVec<int> &Track_originalAlgo, int option) {
 	RVec<int> pairs;
 	for (auto i=0U; i < Muon_pt.size(); i++) {
-		if (Muon_pt[i]<25.) continue;
+		if (Muon_pt[i]<35.) continue;
 		if (abs(Muon_eta[i])>2.4) continue;
 		if (!Muon_isGlobal[i]) continue;
 		TLorentzVector cand1, cand2;
@@ -169,8 +171,8 @@ RVec<int> maketnppairstrack(RVec<float> &Muon_pt, RVec<float> &Muon_eta, RVec<fl
 		if (!cleaner(i,Muon_standeta,Muon_standphi,Muon_isStandalone)) continue;
 		if (!Muon_mediumId[i]) continue;
 		if (abs(Muon_dxyBS[i])>0.05) continue;
-		if (!Muon_triggered[i]) continue;
-		if (Muon_pfRelIso04_all[i]>0.15) continue;
+//		if (!Muon_triggered[i]) continue;
+//		if (Muon_pfRelIso04_all[i]>0.15) continue;
 		for (auto j=0U; j < Track_pt.size(); j++) {
 			TLorentzVector cand3;
 			cand3.SetPtEtaPhiM(3.,Track_eta[j],Track_phi[j],0.);
@@ -345,6 +347,48 @@ RVec<bool> goodmuonboolidip(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, R
 	return v;
 }
 
+RVec<bool> goodmuonboolid(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
+
+RVec<bool> goodmuonboolip(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(fabs(Muon_dxyBS[idx])<0.05)) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
+
 //TRIGGERMATCH
 
 RVec<bool> goodmuonbooltrigger(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered) {
@@ -383,6 +427,29 @@ RVec<bool> goodmuonboolisolation(RVec<int> &goodgenidx, RVec<int> &Muon_genPartI
 			}
 		}
 		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])&&(fabs(Muon_dxyBS[idx])<0.05)&&(Muon_triggered[idx])&&(Muon_pfRelIso04_all[idx]<0.15)) {
+			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
+			else v.emplace_back(0);
+		}
+		else v.emplace_back(0); 
+	}
+	return v;
+}
+
+//ISOLATION WITHOUT TRIGGER
+
+RVec<bool> goodmuonboolisolationnotrig(RVec<int> &goodgenidx, RVec<int> &Muon_genPartIdx, RVec<float> &Muon_eta, RVec<float> &Muon_phi, RVec<float> &Muon_standeta, RVec<float> &Muon_standphi, RVec<bool> &Muon_isStandalone, RVec<bool> &Muon_isGlobal, RVec<bool> &Muon_mediumId, RVec<float> &Muon_dxyBS, RVec<bool> &Muon_triggered, RVec<float> &Muon_pfRelIso04_all) {
+	RVec<bool> v;
+	for (auto i=0U; i<goodgenidx.size(); i++) {
+		int idx=-1;
+		for (auto j=0U; j<Muon_genPartIdx.size(); ++j) {
+			if (Muon_genPartIdx[j]==goodgenidx[i]) {
+				TLorentzVector cand1, cand2;
+				cand1.SetPtEtaPhiM(3.,Muon_eta[j],Muon_phi[j],0.);
+				cand2.SetPtEtaPhiM(3.,Muon_standeta[j],Muon_standphi[j],0.);
+				if (cand1.DeltaR(cand2)<DISTANCE) idx=j;
+			}
+		}
+		if ((idx>-1)&&(Muon_isGlobal[idx])&&(Muon_mediumId[idx])&&(fabs(Muon_dxyBS[idx])<0.05)&&(Muon_pfRelIso04_all[idx]<0.15)) {
 			if (cleaner(idx,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(1);
 			else v.emplace_back(0);
 		}

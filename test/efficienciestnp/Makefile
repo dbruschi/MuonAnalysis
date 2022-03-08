@@ -1,6 +1,6 @@
 CXXFLAGS=`root-config --libs --cflags --glibs`
 
-all: recoefficiencytnp globalefficiencytnp idipefficiencytnp triggermatchtnp isolationtnp
+all: recoefficiencytnp globalefficiencytnp idipefficiencytnp triggermatchtnp isolationtnp isolationwithouttrigger idtnp iptnp errorfunction isolationwithouttriggererrorfunction unfoldingmatrix
 
 recoefficiencytnp: Functions.o libFunctions.so recoefficiencytnp.C
 	g++ $(CXXFLAGS) -O3 recoefficiencytnp.C -L. -lFunctions -o recoefficiencytnp 
@@ -16,6 +16,24 @@ triggermatchtnp: Functions.o libFunctions.so triggermatchtnp.C
 
 isolationtnp: Functions.o libFunctions.so isolationtnp.C
 	g++ $(CXXFLAGS) -O3 isolationtnp.C -L. -lFunctions -o isolationtnp 
+
+isolationwithouttrigger: Functions.o libFunctions.so isolationwithouttrigger.C
+	g++ $(CXXFLAGS) -O3 isolationwithouttrigger.C -L. -lFunctions -o isolationwithouttrigger
+
+isolationwithouttriggererrorfunction: Functions.o libFunctions.so isolationwithouttriggererrorfunction.C
+	g++ $(CXXFLAGS) -O3 isolationwithouttriggererrorfunction.C -L. -lFunctions -o isolationwithouttriggererrorfunction
+
+unfoldingmatrix: Functions.o libFunctions.so unfoldingmatrix.C
+	g++ $(CXXFLAGS) -O3 unfoldingmatrix.C -L. -lFunctions -o unfoldingmatrix
+
+idtnp: Functions.o libFunctions.so idtnp.C
+	g++ $(CXXFLAGS) -O3 idtnp.C -L. -lFunctions -o idtnp
+
+iptnp: Functions.o libFunctions.so iptnp.C
+	g++ $(CXXFLAGS) -O3 iptnp.C -L. -lFunctions -o iptnp
+
+errorfunction: Functions.o libFunctions.so errorfunction.C
+	g++ $(CXXFLAGS) -O3 errorfunction.C -L. -lFunctions -o errorfunction
 
 Functions.o: Functionstnp.C Functionstnp.h
 	g++ $(CXXFLAGS) -O3 -c -fpic Functionstnp.C -o Functions.o
