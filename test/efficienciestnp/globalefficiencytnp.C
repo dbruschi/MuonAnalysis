@@ -37,6 +37,8 @@ void globalefficiencytnp(const char* name) {
 	auto histo6 = d1.Histo2D({"histo6", "", neta, mineta, maxeta, npt, minpt, maxpt}, "absgoodstandeta", "goodstandpt");
 	auto histo7 = d1.Histo3D({"passinginvariantmasses", "", neta, mineta, maxeta, npt, minpt, maxpt, nim, minim, maxim}, "absgoodstandeta","goodstandpt","passinginvariantmasses");
 	auto histo8 = d1.Histo3D({"failinginvariantmasses", "", neta, mineta, maxeta, npt, minpt, maxpt, nim, minim, maxim}, "absgoodstandeta","goodstandpt","failinginvariantmasses");
+	TFile *file=new TFile("histos.root","RECREATE");
+	file->cd();
 	TH2D* Histo1=(TH2D*)histo1.GetPtr()->Clone(), *Histo2=(TH2D*)histo2.GetPtr()->Clone(), *Histo3=(TH2D*)histo3.GetPtr()->Clone(), *Histo4=(TH2D*)histo4.GetPtr()->Clone(), *Histo5=(TH2D*)histo5.GetPtr()->Clone(), *Histo6=(TH2D*)histo6.GetPtr()->Clone();
 	TH3D* passinginvariantmasses=(TH3D*)histo7.GetPtr()->Clone(), *failinginvariantmasses=(TH3D*)histo8.GetPtr()->Clone();
 	Histo1->Divide(Histo2);
@@ -84,6 +86,7 @@ void globalefficiencytnp(const char* name) {
 	Histo7->GetXaxis()->SetTitle("GenMuon |#eta|");
 	Histo7->GetYaxis()->SetTitle("GenMuon p_{T} [GeV]");
 	Histo7->Draw("colz");
+	file->Write();
 	TFile* output=new TFile("output.root","RECREATE");
 	output->cd();
 	for (unsigned int i=1; i<=neta; i++) {

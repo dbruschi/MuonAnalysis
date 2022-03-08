@@ -1,6 +1,6 @@
 CXXFLAGS=`root-config --libs --cflags --glibs`
 
-all: recoefficiencytnp globalefficiencytnp idipefficiencytnp triggermatchtnp isolationtnp isolationwithouttrigger idtnp iptnp errorfunction isolationwithouttriggererrorfunction unfoldingmatrix
+all: recoefficiencytnp globalefficiencytnp idipefficiencytnp triggermatchtnp isolationtnp isolationwithouttrigger idtnp iptnp errorfunction isolationwithouttriggererrorfunction unfoldingmatrixreco unfoldingmatrixglobal unfoldingmatrixrest
 
 recoefficiencytnp: Functions.o libFunctions.so recoefficiencytnp.C
 	g++ $(CXXFLAGS) -O3 recoefficiencytnp.C -L. -lFunctions -o recoefficiencytnp 
@@ -23,8 +23,14 @@ isolationwithouttrigger: Functions.o libFunctions.so isolationwithouttrigger.C
 isolationwithouttriggererrorfunction: Functions.o libFunctions.so isolationwithouttriggererrorfunction.C
 	g++ $(CXXFLAGS) -O3 isolationwithouttriggererrorfunction.C -L. -lFunctions -o isolationwithouttriggererrorfunction
 
-unfoldingmatrix: Functions.o libFunctions.so unfoldingmatrix.C
-	g++ $(CXXFLAGS) -O3 unfoldingmatrix.C -L. -lFunctions -o unfoldingmatrix
+unfoldingmatrixreco: Functions.o libFunctions.so unfoldingmatrixreco.C
+	g++ $(CXXFLAGS) -O3 unfoldingmatrixreco.C -L. -lFunctions -o unfoldingmatrixreco
+
+unfoldingmatrixglobal: Functions.o libFunctions.so unfoldingmatrixglobal.C
+	g++ $(CXXFLAGS) -O3 unfoldingmatrixglobal.C -L. -lFunctions -o unfoldingmatrixglobal
+
+unfoldingmatrixrest: Functions.o libFunctions.so unfoldingmatrixrest.C
+	g++ $(CXXFLAGS) -O3 unfoldingmatrixrest.C -L. -lFunctions -o unfoldingmatrixrest
 
 idtnp: Functions.o libFunctions.so idtnp.C
 	g++ $(CXXFLAGS) -O3 idtnp.C -L. -lFunctions -o idtnp

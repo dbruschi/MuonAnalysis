@@ -40,7 +40,7 @@ void unfoldingmatrix(const char* name) {
 	unsigned int neta=12, npt=3, nim=70;
 	float mineta=-2.4, minpt=25., minim=50.;
 	float maxeta=2.4, maxpt=60., maxim=120.;
-	auto unfolding = [&neta,&maxeta,&mineta,&npt,&maxpt,&minpt](RVec<float> &eta, RVec<float> &pt, unsigned long size){
+	auto unfolding = [&neta,&maxeta,&mineta,&npt,&maxpt,&minpt](RVec<float> &eta, RVec<float> &pt){
 		RVec<float> v;
 		for (auto i=0U; i!=pt.size(); i++) {
 			bool flag=false;
@@ -56,18 +56,23 @@ void unfoldingmatrix(const char* name) {
 		}
 		return v;
 	};
-	d1=d1.Define("goodgenetasize","goodgeneta.size()").Define("unfoldingmc",unfolding,{"goodgeneta","goodgenpt","goodgenetasize"}).Define("unfoldingtnp",unfolding,{"goodtrackrealeta","goodtrackrealpt","goodgenetasize"});
+	d1=d1.Define("unfoldingmc",unfolding,{"goodgeneta","goodgenpt"}).Define("unfoldingtnp",unfolding,{"goodtrackrealeta","goodtrackrealpt"});
 	auto histo1=d1.Histo2D({"histo1","",neta*npt,-0.5,neta*npt+0.5,neta*npt,-0.5,neta*npt+0.5},"unfoldingmc","unfoldingtnp");
 	TH2D* Histo1=(TH2D*)histo1.GetPtr()->Clone();
-	Histo1->Draw();
-	TMatrixF matrix(neta*npt,neta*npt);
+	TMatrixF* matrix=new TMatrixF(neta*npt,neta*npt);
 	for (unsigned int i=0; i!=neta*npt; i++) {
+		Histo1->GetXaxis()->SetRange(i+1,i+1);
+		TH1D* projection=(TH1D*)Histo1->ProjectionY();
+		float integral=projection->Integral();
+		Histo1->GetXaxis()->SetRange(1,neta*npt);
 		for (unsigned int j=0; j!=neta*npt; j++) {
-			std::cout<<i<<" "<<j<<"\n";
-			matrix[i][j]=Histo1->GetBinContent(i+1,j+1);
+			if (integral>0) (*matrix)[i][j]=Histo1->GetBinContent(i+1,j+1)/integral;
+			else (*matrix)[i][j]=0.;
 		}
 	}
-	matrix.Print();
+	matrix->Invert();
+	matrix->Print();
+	matrix->Draw();
 }
 
 int main(int argc, char **argv){
