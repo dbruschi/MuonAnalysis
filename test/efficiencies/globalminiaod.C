@@ -96,7 +96,7 @@ RVec<bool> Goodstand(RVec<int> &goodmuonidx, RVec<bool> &Muon_isGlobal, RVec<flo
 		cand1.SetPtEtaPhiM(3.,Muon_eta[goodmuonidx[i]],Muon_phi[goodmuonidx[i]],0.);
 		cand2.SetPtEtaPhiM(3.,Muon_standeta[goodmuonidx[i]],Muon_standphi[goodmuonidx[i]],0.);
 		if ((Muon_isGlobal[goodmuonidx[i]])&&(cand1.DeltaR(cand2)<0.3)) {
-			if (cleaner(i,Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(true);
+			if (cleaner(goodmuonidx[i],Muon_standeta,Muon_standphi,Muon_isStandalone)) v.emplace_back(true);
 			else v.emplace_back(false);
 		}
 		else v.emplace_back(false);
