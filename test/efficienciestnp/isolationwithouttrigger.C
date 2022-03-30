@@ -12,9 +12,9 @@
 
 using namespace ROOT;
 
-void isolationtnp(const char* name) {
+void isolationtnp(std::vector<std::string> names) {
 	gStyle->SetOptStat(0);
-	RDataFrame df("demo/Events",name);
+	RDataFrame df("demo/Events",names);
 	auto d1=df.Define("goodgenpt",goodgenvalue,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgeneta",goodgenvalue,{"GenPart_eta","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenphi",goodgenvalue,{"GenPart_phi","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenidx",goodgenidx,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodmuonbool",goodmuonboolisolationnotrig,{"goodgenidx","Muon_genPartIdx","Muon_eta","Muon_phi","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId","Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all"}).Define("matchedtrackidx",matchedtrackidx,{"goodgeneta","goodgenphi","goodgenidx","Track_eta","Track_phi","Track_chi2","Track_originalAlgo"}).Define("matchedstaidx",matchedstaidx,{"goodgeneta","goodgenphi","goodgenidx","Muon_standeta","Muon_standphi","Muon_isStandalone"});
 	d1=d1.Define("zero","0").Define("one","1").Define("two","2").Define("three","3").Define("four","4").Define("tnppairtag",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","zero"}).Define("tnppairprobe",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","one"}).Define("tnppairflag",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","two"});
 	d1=d1.Define("goodtnppairtag",goodtnppairs,{"tnppairtag","tnppairprobe","tnppairflag","Muon_genPartIdx","matchedtrackidx","goodgenidx","zero"}).Define("goodtnppairprobe",goodtnppairs,{"tnppairtag","tnppairprobe","tnppairflag","Muon_genPartIdx","matchedtrackidx","goodgenidx","one"});
@@ -38,7 +38,7 @@ void isolationtnp(const char* name) {
 	d1=d1.Define("invariantmass",invariantmasses,{"isolationdenominatortag","isolationdenominatorprobe","Muon_pt","Muon_eta","Muon_phi","Muon_pt","Muon_eta","Muon_phi","Muon_mass"}).Define("passinginvariantmasses","invariantmass*(isisolation)").Define("failinginvariantmasses","invariantmass*(isisolation==false)");
 	//d1=d1.Define("absgoodgeneta","abs(goodgeneta)").Define("absgoodtracketa","abs(goodtracketa)").Define("absgoodstandeta","abs(goodstandeta)").Define("absgoodglobaleta","abs(goodglobaleta)").Define("absgoodidipeta","abs(goodidipeta)").Define("absgoodtriggereta","abs(goodtriggereta)");
 	d1=d1.Define("absgoodgeneta","abs(goodgeneta)").Define("absgoodtracketa","abs(goodtracketa)").Define("absgoodstandeta","abs(goodstandeta)").Define("absgoodglobaleta","abs(goodglobaleta)").Define("absgoodtriggereta","abs(goodtriggereta)");
-	unsigned int neta=24, npt=36, nim=70;
+	unsigned int neta=24, npt=9, nim=70;
 	float mineta=0, minpt=25., minim=50.;
 	float maxeta=2.4, maxpt=60., maxim=120.;
 	auto histo1 = d1.Histo2D({"histo1", "", neta, mineta, maxeta, npt, minpt, maxpt}, "absgoodgeneta", "goodgenpt", "goodmuonbool");
@@ -60,6 +60,11 @@ void isolationtnp(const char* name) {
 	TH2D* Histo1=(TH2D*)histo1.GetPtr()->Clone(), *Histo2=(TH2D*)histo2.GetPtr()->Clone(), *Histo3=(TH2D*)histo3.GetPtr()->Clone(), *Histo4=(TH2D*)histo4.GetPtr()->Clone(), *Histo5=(TH2D*)histo5.GetPtr()->Clone(), *Histo6=(TH2D*)histo6.GetPtr()->Clone(), *Histo7=(TH2D*)histo7.GetPtr()->Clone(), *Histo8=(TH2D*)histo8.GetPtr()->Clone(), *Histo11=(TH2D*)histo11.GetPtr()->Clone(), *Histo12=(TH2D*)histo12.GetPtr()->Clone();
 	TH3D* passinginvariantmasses=(TH3D*)histo13.GetPtr()->Clone(), *failinginvariantmasses=(TH3D*)histo14.GetPtr()->Clone();
 	Histo1->Divide(Histo2);
+	for (unsigned int i=1;i<=neta;i++) {
+		for (unsigned int j=1; j<=npt;j++) {
+			Histo1->SetBinError(i,j,sqrt(Histo1->GetBinContent(i,j)*(1.-Histo1->GetBinContent(i,j)))/sqrt(histo2->GetBinContent(i,j)));
+		}
+	}
 	Histo3->Divide(Histo4);
 	Histo5->Divide(Histo6);
 	Histo7->Divide(Histo8);
@@ -90,6 +95,7 @@ void isolationtnp(const char* name) {
 	product->GetYaxis()->SetTitle("GenMuon p_{T} [GeV]");
 	product->Draw("colz");
 	TH2D* Histo13=(TH2D*)Histo1->Clone();
+	Histo13->SetName("histo13");
 	Histo13->Divide(product);
 	TCanvas *c7=new TCanvas();
 	c7->cd();
@@ -134,7 +140,11 @@ void isolationtnp(const char* name) {
 int main(int argc, char **argv) {
 	char** abcd;
 	TApplication theApp("App",0,abcd);
-	isolationtnp(argv[1]);
+	std::vector<std::string> names;
+	for (int i=1; i!=argc; i++) {
+		names.push_back(std::string(argv[i]));
+	}
+	isolationtnp(names);
 	theApp.Run();
 	return 0;
 }

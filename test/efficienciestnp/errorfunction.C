@@ -31,11 +31,12 @@ void errorfunction(const char* name) {
 		histotitle+=" "+std::to_string(histo->GetXaxis()->GetBinCenter(i)-histo->GetXaxis()->GetBinWidth(i)/2);
 		histotitle+=" "+std::to_string(histo->GetXaxis()->GetBinCenter(i)+histo->GetXaxis()->GetBinWidth(i)/2);
 		histox->SetTitle(histotitle.c_str());
-		TF1* fit=new TF1(errorfunctionname.c_str(),"[0]*ROOT::Math::erf((x-[1])/[2])",25.,60.);
+		TF1* fit=new TF1(errorfunctionname.c_str(),"[0]*ROOT::Math::erf((x-[1])/[2])+[3]",25.,60.);
 		fit->SetTitle(errorfunctiontitle.c_str());
 		fit->SetParameter(0,0.9);
 		fit->SetParameter(1,30.);
 		fit->SetParameter(2,5.);
+		fit->SetParameter(3,0.);
 		histox->Fit(errorfunctionname.c_str());
 		normchi2->Fill(fit->GetChisquare()/fit->GetNDF());
 		fit->Write();

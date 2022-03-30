@@ -30,17 +30,17 @@ RVec<float> goodtrackunfolding(RVec<int> &goodtnppairtag, RVec<int> &goodtnppair
 	return v;
 }
 
-void unfoldingmatrix(const char* name) {
+void unfoldingmatrix(std::vector<std::string> names) {
 	gStyle->SetOptStat(0);
-	RDataFrame df("demo/Events",name);
+	RDataFrame df("demo/Events",names);
 	auto d1=df.Define("goodgenpt",goodgenvalue,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgeneta",goodgenvalue,{"GenPart_eta","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenphi",goodgenvalue,{"GenPart_phi","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("goodgenidx",goodgenidx,{"GenPart_pt","GenPart_postFSRLepIdx1","GenPart_postFSRLepIdx2","GenPart_eta","GenPart_phi","GenPart_status","GenPart_pdgId"}).Define("matchedstaidx",matchedstaidx,{"goodgeneta","goodgenphi","goodgenidx","Muon_standeta","Muon_standphi","Muon_isStandalone"});
 	d1=d1.Define("zero","0").Define("one","1").Define("two","2").Define("tnppairtag",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","zero"}).Define("tnppairprobe",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","one"}).Define("tnppairflag",maketnppairstrack,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId", "Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","Track_pt","Track_eta","Track_phi","Track_chi2","Track_originalAlgo","two"});
 	d1=d1.Define("tnppairtagreco",maketnppairs,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId","Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","zero"}).Define("tnppairprobereco",maketnppairs,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId","Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","one"}).Define("tnppairflagreco",maketnppairs,{"Muon_pt","Muon_eta","Muon_phi","Muon_mass","Muon_standeta","Muon_standphi","Muon_isStandalone","Muon_isGlobal","Muon_mediumId","Muon_dxyBS","Muon_triggered","Muon_pfRelIso04_all","two"});
 	d1=d1.Define("goodtnppairtagreco",goodtnppairs,{"tnppairtagreco","tnppairprobereco","tnppairflagreco","Muon_genPartIdx","matchedstaidx","goodgenidx","zero"}).Define("goodtnppairprobereco",goodtnppairs,{"tnppairtagreco","tnppairprobereco","tnppairflagreco","Muon_genPartIdx","matchedstaidx","goodgenidx","one"}).Define("goodtnppairflagreco",goodtnppairs,{"tnppairtagreco","tnppairprobereco","tnppairflagreco","Muon_genPartIdx","matchedstaidx","goodgenidx","two"});
 	d1=d1.Define("goodstandpt",goodtrackgen,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","goodgenpt"}).Define("goodstandeta",goodtrackgen,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","goodgeneta"}).Define("goodstandphi",goodtrackgen,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","goodgenphi"}).Define("goodstandrealpt",goodtrackunfolding,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","Muon_standpt"}).Define("goodstandrealeta",goodtrackunfolding,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","Muon_standeta"}).Define("goodstandrealphi",goodtrackunfolding,{"goodtnppairtagreco","goodtnppairprobereco","matchedstaidx","goodgenidx","Muon_standphi"});
-	unsigned int neta=12, npt=3, nim=70;
-	float mineta=-2.4, minpt=25., minim=50.;
-	float maxeta=2.4, maxpt=60., maxim=120.;
+	int neta=48, npt=9, nqt=25;
+	float mineta=-2.4, minpt=25., minqt=0.;
+	float maxeta=2.4, maxpt=60., maxqt=100.;
 	auto unfolding = [&neta,&maxeta,&mineta,&npt,&maxpt,&minpt](RVec<float> &eta, RVec<float> &pt){
 		RVec<float> v;
 		for (auto i=0U; i!=pt.size(); i++) {
@@ -79,7 +79,11 @@ void unfoldingmatrix(const char* name) {
 int main(int argc, char **argv){
 	char** abcd;
 	TApplication theApp("App",0,abcd);
-	unfoldingmatrix(argv[1]);
+	std::vector<std::string> names;
+	for (int i=1; i!=argc; i++) {
+		names.push_back(std::string(argv[i]));
+	}
+	unfoldingmatrix(names);
 	theApp.Run();
 	return 0;
 }
